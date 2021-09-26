@@ -1,2 +1,7 @@
 fpsi
 config.yaml
+
+*~
+*#
+*.o
+*.so

@@ -6,8 +6,12 @@
 **** Write data synchronization system
 *** Write communication system
 *** Write plugin/hook system
+**** Make plugins execute in a threaded manner
+**** Make sure plugins have a way to edit dataframes
 ** Plugins
 *** File simulation
 ** Features
 *** Logging/debug
 *** Command-line arguments
+*** GUI
+**** Build Glade GTK frontend

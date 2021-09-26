@@ -5,30 +5,23 @@ namespace fpsi {
   
 class DebugPlug : public Plugin {
 public:
-  DebugPlug() {
-    
+  DebugPlug(const json &plugin_config) : Plugin(plugin_config){
+    log("Called DebugPlug!");
   }
   
   virtual ~DebugPlug() {
     
   }
 
-  virtual int foo() {
-    return 1;
-  }
-
-  virtual double bar() {
-    return 3.5;
-  }
-
-  virtual std::string foobar() {
-    return "hello world!";
+  bool armed_start(const json &armed_data) override {
+    log("DebugPlug: Armed_start");
+    return true;
   }
   
 };
 
 }
 
-extern "C" fpsi::Plugin *acquire() {
-  return new fpsi::DebugPlug();
+extern "C" fpsi::Plugin *construct_plugin(const json &plugin_config) {
+  return new fpsi::DebugPlug(plugin_config);
 }

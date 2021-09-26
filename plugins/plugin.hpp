@@ -1,37 +1,46 @@
+#pragma once
+
 #include <iostream>
 
+#include "../src/fpsi.hpp"
 
 
 namespace fpsi {
   
 class Plugin {
 public:
-  Plugin() {
-    
+  Plugin(const json &plugin_config) {}
+  virtual ~Plugin() {}
+
+  // State
+  virtual bool armed_start(const json & armed_data) {
+    return true;
   }
-  
-  virtual ~Plugin() {
-    
+  virtual bool armed_end(const json & armed_data) {
+    return true;
   }
 
-  virtual int foo() {
-    return 1;
+  // Utility
+  virtual std::string get_log() {
+    std::string log_copy = raw_log;
+    raw_log = "";
+    return log_copy;
   }
 
-  virtual double bar() {
-    return 3.5;
+protected:
+  void log(std::string note) {
+    raw_log += note;
   }
 
-  virtual std::string foobar() {
-    return "hello world!";
-  }
+private:
+  std::string raw_log;
   
 };
 
 }
 
-extern "C" fpsi::Plugin *acquire();
+extern "C" fpsi::Plugin *construct_plugin(const json &plugin_config);
 
-extern "C" void destroy(fpsi::Plugin *plug) {
+extern "C" void delete_plugin(fpsi::Plugin *plug) {
   delete plug;
 }
