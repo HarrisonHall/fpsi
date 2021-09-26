@@ -1,0 +1,13 @@
+* Todo
+** Systems
+*** Finish plugin header
+*** Write state system
+*** Write data system
+**** Write data synchronization system
+*** Write communication system
+*** Write plugin/hook system
+** Plugins
+*** File simulation
+** Features
+*** Logging/debug
+*** Command-line arguments
