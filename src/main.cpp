@@ -8,7 +8,7 @@
 #include "../include/yaml.h"
 
 #include "fpsi.hpp"
-#include "session.hpp"
+#include "session/session.hpp"
 
 
 int main(int argc, char **argv) {

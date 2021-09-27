@@ -12,10 +12,10 @@
 #include <vector>
 #include <utility>
 
-#include "../include/yaml.h"
+#include "../../include/yaml.h"
+ #include "../../plugins/plugin.hpp"
 
-#include "fpsi.hpp"
-#include "../plugins/plugin.hpp"
+#include "../fpsi.hpp"
 
 
 namespace fpsi {
