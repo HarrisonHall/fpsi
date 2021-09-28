@@ -3,8 +3,11 @@
  */
 #pragma once
 
+#include <string>
+#include <thread>
 
-#include "../include/yaml.h"
+#include "../../include/yaml.h"
+#include "../fpsi.hpp"
 
 
 namespace fpsi {
@@ -12,6 +15,7 @@ namespace fpsi {
 class Session {
 public:
   explicit Session(std::string config_file, int argc, char **argv);
+  void parse_cli(int, char**);
 
   int loop();
 
@@ -23,9 +27,13 @@ public:
 
   std::vector<std::pair<std::string, json>> get_plugins();
 
+  std::string get_glade_file();
+
 private:
   YAML::Node raw_config;
-  
+  bool show_gui = false;
+  std::string glade_file = "";
+  std::thread *gui_thread = nullptr;
 };
 
 }
