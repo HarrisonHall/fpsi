@@ -22,14 +22,17 @@ glade.o: src/gui/fpsi_gui.glade
 gui.o: src/gui/gui.cpp
 	g++ -Wall -c src/gui/gui.cpp -o gui.o `pkg-config gtkmm-3.0 --cflags --libs`
 
+logging.o: src/util/logging.cpp
+	g++ -Wall -c src/util/logging.cpp -o logging.o
+
 sessiongui.o: src/session/session.cpp
 	g++ -Wall $(GUIFLAGS) -c src/session/session.cpp -o sessiongui.o `pkg-config gtkmm-3.0 --cflags --libs`
 
 minimal: dataframe.o datahandler.o session.o
-	$(CXX) $(LIBS) $(CXXFILES) dataframe.o datahandler.o session.o src/main.cpp $(CXXFLAGS)
+	$(CXX) $(LIBS) dataframe.o datahandler.o session.o src/main.cpp $(CXXFLAGS)
 
-main: dataframe.o datahandler.o glade.o sessiongui.o gui.o
-	$(CXX) $(LIBS) $(GUIFLAGS) glade.o sessiongui.o gui.o src/main.cpp $(CXXFLAGS) `pkg-config gtkmm-3.0 --cflags --libs`
+main: dataframe.o datahandler.o glade.o gui.o logging.o sessiongui.o
+	$(CXX) $(LIBS) $(GUIFLAGS) dataframe.o datahandler.o glade.o gui.o logging.o sessiongui.o src/main.cpp $(CXXFLAGS) `pkg-config gtkmm-3.0 --cflags --libs`
 
 clean:
 	rm -f *.o

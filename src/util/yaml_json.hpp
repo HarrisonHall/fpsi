@@ -18,7 +18,8 @@ json from_yaml(const YAML::Node &orig) {
 }
 
 YAML::Node from_json(const json &orig) {
-  return YAML::Node();  // TODO
+  // TODO
+  return YAML::Node();
 }
 
 }

@@ -15,6 +15,7 @@
 #include "../plugin/plugin_handler.hpp"
 #include "../../plugins/plugin.hpp"
 #include "../util/yaml_json.hpp"
+#include "../util/logging.hpp"
 
 
 #ifdef GUI
@@ -36,14 +37,12 @@ int Session::loop() {
   
 #ifdef GUI
   if (this->show_gui) {
-    //std::thread gui_thread(gui_build, std::ref(*this));
-    //gui_thread.join();
     this->gui_thread = new std::thread(gui_build, std::ref(*this));
   }
 #endif
   
   for (auto plugin : plugin_objects) {
-    std::cout << "--" << plugin->get_log() << std::endl;
+    util::log("plugin message: %s", plugin->get_log().c_str());
   }
   
 #ifdef GUI
@@ -64,7 +63,7 @@ void Session::parse_cli(int argc, char **argv) {
   try {
     app.parse(argc, argv);
   } catch (const CLI::ParseError &e) {
-    app.exit(e);
+    exit(app.exit(e));
   }
 }
 

@@ -11,7 +11,4 @@
 ** Plugins
 *** File simulation
 ** Features
-*** Logging/debug
-*** Command-line arguments
 *** GUI
-**** Build Glade GTK frontend
