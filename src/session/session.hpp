@@ -5,10 +5,12 @@
 
 #include <string>
 #include <thread>
+#include <deque>
 
 #include "../../include/yaml.h"
 #include "../fpsi.hpp"
 
+constexpr size_t max_state_size = 10;
 
 namespace fpsi {
 
@@ -29,11 +31,16 @@ public:
 
   std::string get_glade_file();
 
+  std::string get_state(unsigned short relative_index = 1);
+
+  void set_state(std::string);
+
 private:
   YAML::Node raw_config;
   bool show_gui = false;
   std::string glade_file = "";
   std::thread *gui_thread = nullptr;
+  std::deque<std::string> states;
 };
 
 }

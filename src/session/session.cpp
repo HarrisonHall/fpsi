@@ -2,10 +2,12 @@
   Session class.
  */
 
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <thread>
+#include <queue>
 #include <vector>
 #include <utility>
 
@@ -24,6 +26,8 @@
 
 #include "session.hpp"
 
+#include "../data/datahandler.hpp"
+
 
 namespace fpsi {
 
@@ -33,6 +37,8 @@ Session::Session(std::string config_file, int argc, char **argv) {
 }
 
 int Session::loop() {
+  auto d = DataHandler(*this);
+  
   load_plugins(get_plugins());
   
 #ifdef GUI
@@ -96,6 +102,18 @@ std::vector<std::pair<std::string, json>> Session::get_plugins() {
 
 std::string Session::get_glade_file() {
   return this->glade_file;
+}
+
+std::string Session::get_state(unsigned short relative_index) {
+  if (!this->states.size()) return "";
+  size_t desired_index = this->states.size() - 1 - relative_index;
+  if (desired_index < 0) desired_index = this->states.size() - 1;
+  return this->states[desired_index];
+}
+
+void Session::set_state(std::string new_state) {
+  this->states.push_back(new_state);
+  if (this->states.size() > max_state_size) this->states.pop_front();
 }
 
 }

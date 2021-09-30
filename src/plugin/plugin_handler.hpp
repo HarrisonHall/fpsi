@@ -64,9 +64,14 @@ Plugin *create_plugin(const std::string &plugin_name, const json &plugin_config)
 }
 
 void load_plugins(const std::vector<std::pair<std::string, json>> &plugins){
+  if (!plugins.size()) {
+    util::log(util::warning, "Not plugins enabled");
+  }
   for (auto p : plugins) {
     if (!create_plugin(p.first, p.second)) {
       util::log(util::error, "Unable to create plugin for %s", p.first.c_str());
+    } else {
+      util::log(util::debug, "Created plugin for %s", p.first.c_str());
     }
   }
 }

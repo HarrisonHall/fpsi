@@ -1,6 +1,6 @@
 # FPSI
-FPSI is a system designed primarily for handling the data and state system of a
-sounding rocket. The core program contains a system for data collection, data
+FPSI is a system designed primarily for handling local data systems managed by
+multiple nodes. The core program contains a system for data collection, data
 filtering, managing states, and communication. A plugin framework is also
 provided so that users can dynamically modify and add features to the FPSI.
 

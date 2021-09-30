@@ -7,6 +7,7 @@
 
 #include "../include/json.hpp"
 
+#include "util/logging.hpp"
 
 
 

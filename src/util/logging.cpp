@@ -33,9 +33,13 @@ bool log(log_level level, const char* message) {
               << rang::bg::reset << rang::fg::reset
               << ": " << message << std::endl;
   } else if (level == info) {
-    std::cout << level_to_name[level] << ": " << message << std::endl;
+    std::cout << rang::fg::blue << level_to_name[level]
+              << rang::fg::reset
+              << ": " << message << std::endl;
   } else if (level == debug) {
-    std::cout << level_to_name[level] << ": " << message << std::endl;
+    std::cout << rang::fg::green << level_to_name[level]
+              << rang::fg::reset
+              << ": " << message << std::endl;
   }
   if (log_file.good()) {
     log_file.close();

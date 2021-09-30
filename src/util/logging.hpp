@@ -9,7 +9,6 @@
 #include <sstream>
 #include <utility>
 
-#include "../session/session.hpp"
 
 namespace util {
 

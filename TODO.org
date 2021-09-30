@@ -12,3 +12,6 @@
 *** File simulation
 ** Features
 *** GUI
+** Research
+*** Use other data serialzation than json/bson
+**** Consider protobuf, flatbuf, and capnbuf
