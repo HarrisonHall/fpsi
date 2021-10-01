@@ -39,7 +39,7 @@ Session::Session(std::string config_file, int argc, char **argv) {
 int Session::loop() {
   auto d = DataHandler(*this);
   
-  load_plugins(get_plugins());
+  load_plugins(*this, get_plugins());
   
 #ifdef GUI
   if (this->show_gui) {

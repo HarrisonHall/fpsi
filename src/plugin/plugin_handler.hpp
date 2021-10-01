@@ -16,6 +16,7 @@
 #include "../../plugins/plugin.hpp"
 #include "../util/logging.hpp"
 
+#include "../session/session.hpp"
 #include "../fpsi.hpp"
 
 
@@ -27,7 +28,7 @@ std::vector<void *> so_handles;
 //std::map<void *, Plugin *> so_plugin_to_handle;
 std::vector<Plugin *> plugin_objects;
 
-Plugin *create_plugin(const std::string &plugin_name, const json &plugin_config) {
+Plugin *create_plugin(Session &session, const std::string &plugin_name, const json &plugin_config) {
   std::string plugin_file = plugin_config.value<std::string>("path", "");
   std::string real_plugin_location = "./" + plugin_file;
   std::filesystem::path f(real_plugin_location);
@@ -48,9 +49,9 @@ Plugin *create_plugin(const std::string &plugin_name, const json &plugin_config)
     return nullptr;
   }
 
-  Plugin *(*acq)(const json &);
-  acq = (Plugin *(*)(const json &))acquire_func;
-  Plugin *new_plugin = acq(plugin_config);
+  Plugin *(*acq)(Session &, const json &);
+  acq = (Plugin *(*)(Session &, const json &))acquire_func;
+  Plugin *new_plugin = acq(session, plugin_config);
   if (!new_plugin) {
     util::log(util::warning, "Unable to initialize plugin object");
     return nullptr;
@@ -63,12 +64,12 @@ Plugin *create_plugin(const std::string &plugin_name, const json &plugin_config)
   return new_plugin;
 }
 
-void load_plugins(const std::vector<std::pair<std::string, json>> &plugins){
+void load_plugins(Session &session, const std::vector<std::pair<std::string, json>> &plugins){
   if (!plugins.size()) {
     util::log(util::warning, "Not plugins enabled");
   }
   for (auto p : plugins) {
-    if (!create_plugin(p.first, p.second)) {
+    if (!create_plugin(session, p.first, p.second)) {
       util::log(util::error, "Unable to create plugin for %s", p.first.c_str());
     } else {
       util::log(util::debug, "Created plugin for %s", p.first.c_str());

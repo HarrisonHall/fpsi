@@ -50,6 +50,14 @@ DataHandler::~DataHandler() {}
 void DataHandler::create_frame() {
   DataFrame new_frame;
   //data.push_back(new_frame);
+  // TODO
+}
+
+bool DataHandler::create_data_source(const std::string &name, json &base_packet) {
+  if (this->data_sources.find(name) != this->data_sources.end()) return false;
+  DataSource *ds = new DataSource{name};
+  this->data_sources[name] = *ds;
+  return true;
 }
 
 }

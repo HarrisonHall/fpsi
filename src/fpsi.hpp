@@ -11,4 +11,4 @@
 
 
 
-using nlohmann::json;
+using json = nlohmann::json;
