@@ -1,18 +1,24 @@
 # pragma once
 
-#include <vector>
+#include <deque>
+#include <memory>
+#include <string>
 
-#include "dataframe.hpp"
 
 
 namespace fpsi {
 
-struct DataSource {
+class DataFrame;
+
+class DataSource {
+public:
+  DataSource(const std::string &ds_name) : name(ds_name) {}
+  ~DataSource() {}
   std::string name;
-  std::vector<DataFrame *> raw_data;
-  std::vector<DataFrame *> agg_data;
-  DataFrame *last_raw = nullptr;
-  DataFrame *raw_agg = nullptr;
+  std::deque<std::shared_ptr<DataFrame>> raw_data;
+  std::deque<std::shared_ptr<DataFrame>> agg_data;
+  std::shared_ptr<DataFrame> last_raw = nullptr;
+  //std::shared_ptr<DataFrame> raw_agg = nullptr;
 };
 
 }  // namespace fpsi

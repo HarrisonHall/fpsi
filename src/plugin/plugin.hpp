@@ -1,23 +1,24 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 #include <vector>
 
-#include "../src/fpsi.hpp"
+#include "../fpsi.hpp"
 
-#include "../src/session/session.hpp"
-#include "../src/data/dataframe.hpp"
+#include "../session/session.hpp"
+#include "../data/dataframe.hpp"
 
 
 namespace fpsi {
   
 class Plugin {
 public:
-  Plugin(Session &session, const json &plugin_config) {}
+  Plugin(Session *session, const json &plugin_config) {}
   virtual ~Plugin() {}
 
-  virtual void pre_aggregate(std::vector<DataFrame *> &raws) {}
-  virtual void post_aggregate(std::vector<DataFrame *> &raws) {}
+  virtual void pre_aggregate(const std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> &raw_data) {}
+  virtual void post_aggregate(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {}
   virtual void pre_state_change(const std::string &last, const std::string &next) {}
   virtual void post_state_change(const std::string &last, const std::string &next) {}
   virtual void send_data(std::vector<DataFrame *> &d) {}
@@ -26,6 +27,8 @@ public:
     return d;
   }
   virtual void *get_gui() { return nullptr; }
+  virtual void read_socket(const json &message) {}
+  virtual void send_socket(const json &message) {}
 
   // Utility
   virtual std::string get_log() {
@@ -46,4 +49,4 @@ private:
 
 }
 
-extern "C" fpsi::Plugin *construct_plugin(fpsi::Session &session,const json &plugin_config);
+extern "C" fpsi::Plugin *construct_plugin(fpsi::Session *session,const json &plugin_config);

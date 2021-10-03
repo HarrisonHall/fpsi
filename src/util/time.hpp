@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 
 namespace util {
 
@@ -13,5 +15,7 @@ unsigned long long timestamp();
 unsigned long long parse_time_str(std::string s);
 
 std::string to_time_str(unsigned long long timestamp);
+
+void active_sleep(uint32_t ms);
 
 }  // namespace util

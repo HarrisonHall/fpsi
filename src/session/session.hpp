@@ -6,20 +6,28 @@
 #include <string>
 #include <thread>
 #include <deque>
+#include <memory>
 
 #include "../../include/yaml.h"
 #include "../fpsi.hpp"
 
-constexpr size_t max_state_size = 10;
+
+
+
+extern const size_t max_state_size;
 
 namespace fpsi {
+
+class DataHandler;
+class Plugin;
 
 class Session {
 public:
   explicit Session(std::string config_file, int argc, char **argv);
+  ~Session();
   void parse_cli(int, char**);
 
-  int loop();
+  void aggregate_data();
 
   std::string to_string();
 
@@ -35,12 +43,18 @@ public:
 
   void set_state(std::string);
 
+  std::shared_ptr<DataHandler> data_handler;
+
+  void finish();
+
 private:
   YAML::Node raw_config;
   bool show_gui = false;
   std::string glade_file = "";
   std::thread *gui_thread = nullptr;
+  std::thread *aggregate_thread = nullptr;
   std::deque<std::string> states;
+  std::vector<std::shared_ptr<Plugin>> plugins;
 };
 
 }

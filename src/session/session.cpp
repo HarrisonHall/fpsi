@@ -15,7 +15,7 @@
 #include "../../include/CLI11.hpp"
 
 #include "../plugin/plugin_handler.hpp"
-#include "../../plugins/plugin.hpp"
+#include "../plugin/plugin.hpp"
 #include "../util/yaml_json.hpp"
 #include "../util/logging.hpp"
 
@@ -24,22 +24,19 @@
 #include "../gui/gui.hpp"
 #endif
 
+#include "../data/datahandler.hpp"
 #include "session.hpp"
 
-#include "../data/datahandler.hpp"
-
+const size_t max_state_size = 10;
 
 namespace fpsi {
 
-Session::Session(std::string config_file, int argc, char **argv) {
+Session::Session(std::string config_file, int argc, char **argv) : data_handler(new DataHandler(this)) {
+  //data_handler = std::make_shared<DataHandler>(new DataHandler(this));
   raw_config = YAML::LoadFile(config_file);
   parse_cli(argc, argv);
-}
 
-int Session::loop() {
-  auto d = DataHandler(*this);
-  
-  load_plugins(*this, get_plugins());
+  this->plugins = load_plugins(this, get_plugins());
   
 #ifdef GUI
   if (this->show_gui) {
@@ -47,17 +44,9 @@ int Session::loop() {
   }
 #endif
   
-  for (auto plugin : plugin_objects) {
+  for (auto plugin : this->plugins) {
     util::log("plugin message: %s", plugin->get_log().c_str());
   }
-  
-#ifdef GUI
-  if (this->show_gui && this->gui_thread) {
-    gui_thread->join();
-  }
-#endif
-  
-  return 0;
 }
 
 void Session::parse_cli(int argc, char **argv) {
@@ -73,11 +62,31 @@ void Session::parse_cli(int argc, char **argv) {
   }
 }
 
+Session::~Session() {
+  #ifdef GUI
+  if (this->show_gui && this->gui_thread) {
+    gui_thread->join();
+  }
+  #endif
+  /*
+  for (auto plugin : this->plugins) {
+    //delete plugin;
+  }
+  */
+}
+
+void Session::aggregate_data() {
+  // Wait for last aggregation to complete
+  if (this->aggregate_thread) {
+    this->aggregate_thread->join();
+    this->aggregate_thread = nullptr;
+  }
+  this->aggregate_thread = new std::thread(fpsi::aggregate_data_threads, this, this->plugins);
+}
+
 std::string Session::to_string() {
   std::stringstream ss;
-  ss << "=Session=\n";
-  ss << "\t" << this->get_name() << "\n";
-  ss << "\t" << this->main_altitude();
+  ss << "Session: " << this->get_name();
   return ss.str();
 }
 
@@ -114,6 +123,18 @@ std::string Session::get_state(unsigned short relative_index) {
 void Session::set_state(std::string new_state) {
   this->states.push_back(new_state);
   if (this->states.size() > max_state_size) this->states.pop_front();
+}
+
+/*
+  Close threads.
+ */
+void Session::finish() {
+  if (gui_thread)
+    if (gui_thread->joinable())
+      gui_thread->join();
+  if (aggregate_thread)
+    if (aggregate_thread->joinable())
+      aggregate_thread->join();
 }
 
 }

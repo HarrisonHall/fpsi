@@ -1,7 +1,8 @@
 LIBS = -L./include -I./include/yaml-cpp/build
-CXXFLAGS = -lyaml-cpp -ldl -O3 -Wall -std=c++17 -pthread
+CXXFLAGS = -lyaml-cpp -ldl -Wall -std=c++17 -pthread -Wl,--export-dynamic
 #CXXFILES =  src/main.cpp
 GUIFLAGS = -DGUI
+# -O3
 
 .PHONY: clean all minimal main
 
@@ -19,6 +20,9 @@ glade.o: src/gui/fpsi_gui.glade
 gui.o: src/gui/gui.cpp src/gui/gui.hpp
 	$(CXX) -Wall -c src/gui/gui.cpp -o gui.o `pkg-config gtkmm-3.0 --cflags --libs`
 
+plugin.o: src/plugin/plugin.hpp src/plugin/plugin_handler.cpp src/plugin/plugin_handler.hpp
+	$(CXX) -Wall -c src/plugin/plugin_handler.cpp -o plugin.o
+
 sqlite.o:
 	$(CC) -c include/sqlite3.c -o sqlite.o
 
@@ -33,11 +37,11 @@ session.o: src/session/session.cpp src/session/session.hpp
 sessiongui.o: src/session/session.cpp src/session/session.hpp
 	$(CXX) -Wall $(GUIFLAGS) -c src/session/session.cpp -o sessiongui.o `pkg-config gtkmm-3.0 --cflags --libs`
 
-minimal: dataframe.o datahandler.o session.o sqlite.o util.o
-	$(CXX) $(LIBS) dataframe.o datahandler.o logging.o session.o sqlite.o util.o src/main.cpp $(CXXFLAGS) -o fpsi-nox
+minimal: dataframe.o datahandler.o plugin.o session.o sqlite.o util.o
+	$(CXX) $(LIBS) dataframe.o datahandler.o session.o sqlite.o util.o src/main.cpp $(CXXFLAGS) -o fpsi-nox
 
-main: dataframe.o datahandler.o glade.o gui.o sessiongui.o sqlite.o util.o
-	$(CXX) $(LIBS) $(GUIFLAGS) dataframe.o datahandler.o glade.o gui.o sessiongui.o sqlite.o util.o src/main.cpp $(CXXFLAGS) `pkg-config gtkmm-3.0 --cflags --libs` -o fpsi
+main: dataframe.o datahandler.o glade.o gui.o plugin.o sessiongui.o sqlite.o util.o
+	$(CXX) $(LIBS) $(GUIFLAGS) dataframe.o datahandler.o glade.o gui.o plugin.o sessiongui.o sqlite.o util.o src/main.cpp $(CXXFLAGS) `pkg-config gtkmm-3.0 --cflags --libs` -o fpsi
 
 clean:
 	rm -f *.o
