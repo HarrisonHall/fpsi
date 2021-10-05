@@ -23,6 +23,7 @@ public:
     session->data_handler->create_data_source("counter", this->base_packet);
     this->session = session;
     counter_thread = new std::thread(&Counter::count, this);
+    this->session->set_state("counter_level", {{"level", 0}});
   }
 
   ~Counter() {
@@ -45,9 +46,24 @@ public:
   void post_aggregate(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {
     if (agg_data.find("counter") == agg_data.end()) return;
     auto df = (*agg_data.find("counter")).second;
+    double value = df->get_data().value<double>("value", 0.0);
     if (df) {
-      util::log(util::warning, "Got avg value %f", df->get_data().value<double>("value", 0.0));
+      util::log(util::warning, "Got avg value %f", value);
     }
+    int level = this->session->get_state("counter_level").value<int>("level", 0);
+    if (value <= 10) {
+    } else if (value >= 10 && value <= 20 && level != 1) {
+      this->session->set_state("counter_level", {{"level", 1}});
+    } else if (value >= 20 && level != 2) {
+      this->session->set_state("counter_level", {{"level", 2}});
+    }
+  }
+
+  void pre_state_change(const std::string &key, const json &last, const json &next) {
+    util::log("(pre) state changed for %s", key.c_str());
+  }
+  void post_state_change(const std::string &key, const json &last, const json &next) {
+    util::log("(post) state changed for %s", key.c_str());
   }
 
 private:

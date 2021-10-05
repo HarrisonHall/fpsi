@@ -12,7 +12,7 @@
 
 namespace util {
 
-enum log_level { debug, info, warning, error };
+enum log_level { debug, info, message, warning, error };
 
 bool log(log_level, const char*);
 
@@ -36,6 +36,8 @@ bool log(const char* message, Params &&... params) {
   return log(info, message, std::forward<Params>(params)...);
 }
 bool log(const std::stringstream&);
+
+void initialize_logging(bool verbose = false, bool debug = false);
 
 //bool initialized_log = false;
 //bool initialize_log(const fpsi::Session &session);

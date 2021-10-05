@@ -33,27 +33,29 @@ public:
 
   std::string get_name();
 
-  double main_altitude();
-
-  std::vector<std::pair<std::string, json>> get_plugins();
+  std::vector<std::pair<std::string, json>> get_plugins(YAML::Node &);
 
   std::string get_glade_file();
 
-  std::string get_state(unsigned short relative_index = 1);
-
-  void set_state(std::string);
+  void set_state(std::string, const json &);
+  const json get_state(std::string);
 
   std::shared_ptr<DataHandler> data_handler;
 
   void finish();
 
-private:
-  YAML::Node raw_config;
-  bool show_gui = false;
-  std::string glade_file = "";
   std::thread *gui_thread = nullptr;
   std::thread *aggregate_thread = nullptr;
-  std::deque<std::string> states;
+  std::thread *state_thread = nullptr;
+  bool exiting = false;
+  
+private:
+  json raw_config;
+  bool show_gui = false;
+  bool verbose = false;
+  bool debug = false;
+  std::string glade_file = "";
+  std::map<std::string, json> states;
   std::vector<std::shared_ptr<Plugin>> plugins;
 };
 

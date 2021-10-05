@@ -32,18 +32,18 @@ const size_t max_state_size = 10;
 namespace fpsi {
 
 Session::Session(std::string config_file, int argc, char **argv) : data_handler(new DataHandler(this)) {
-  //data_handler = std::make_shared<DataHandler>(new DataHandler(this));
-  raw_config = YAML::LoadFile(config_file);
+  auto config_yaml = YAML::LoadFile(config_file);
+  raw_config = util::from_yaml(config_yaml);
   parse_cli(argc, argv);
 
-  this->plugins = load_plugins(this, get_plugins());
-  
+  this->plugins = load_plugins(this, get_plugins(config_yaml));
+
 #ifdef GUI
   if (this->show_gui) {
     this->gui_thread = new std::thread(gui_build, std::ref(*this));
   }
 #endif
-  
+
   for (auto plugin : this->plugins) {
     util::log("plugin message: %s", plugin->get_log().c_str());
   }
@@ -55,19 +55,26 @@ void Session::parse_cli(int argc, char **argv) {
   app.add_flag("--gui", this->show_gui, "Show the gui");
   app.add_option("--glade", this->glade_file, "Specify alternative glade file");
 
+  bool show_version = false;
+  app.add_flag("-V,--version", show_version, "fpsi version");
+  app.add_flag("-v,--verbose", this->verbose, "show more information");
+  app.add_flag("-d,--debug", this->debug, "show debug information");
+
   try {
     app.parse(argc, argv);
   } catch (const CLI::ParseError &e) {
     exit(app.exit(e));
   }
+
+  if (show_version) {
+    std::cout << "fpsi 0.1b" << std::endl;
+    exit(0);
+  }
+
+  util::initialize_logging(this->verbose, this->debug);
 }
 
 Session::~Session() {
-  #ifdef GUI
-  if (this->show_gui && this->gui_thread) {
-    gui_thread->join();
-  }
-  #endif
   /*
   for (auto plugin : this->plugins) {
     //delete plugin;
@@ -76,10 +83,12 @@ Session::~Session() {
 }
 
 void Session::aggregate_data() {
+  if (this->exiting) return;
+
   // Wait for last aggregation to complete
   if (this->aggregate_thread) {
     this->aggregate_thread->join();
-    this->aggregate_thread = nullptr;
+    delete this->aggregate_thread;
   }
   this->aggregate_thread = new std::thread(fpsi::aggregate_data_threads, this, this->plugins);
 }
@@ -91,16 +100,12 @@ std::string Session::to_string() {
 }
 
 std::string Session::get_name() {
-  return raw_config["name"].as<std::string>("FPSI Default");
+  return raw_config.value<std::string>("name", "FPSI Default");
 }
 
-double Session::main_altitude() {
-  return raw_config["main_altitude"].as<double>(0.0);
-}
-
-std::vector<std::pair<std::string, json>> Session::get_plugins() {
+std::vector<std::pair<std::string, json>> Session::get_plugins(YAML::Node &config_yaml) {
   std::vector<std::pair<std::string, json>> plugins;
-  YAML::Node config_plugins = this->raw_config["plugins"];
+  YAML::Node config_plugins = config_yaml["plugins"];
   for (auto plug_iter : config_plugins) {
     std::string plug_name = plug_iter.first.as<std::string>("");
     json plug_conf = util::from_yaml(plug_iter.second);
@@ -113,28 +118,52 @@ std::string Session::get_glade_file() {
   return this->glade_file;
 }
 
-std::string Session::get_state(unsigned short relative_index) {
-  if (!this->states.size()) return "";
-  size_t desired_index = this->states.size() - 1 - relative_index;
-  if (desired_index < 0) desired_index = this->states.size() - 1;
-  return this->states[desired_index];
+const json Session::get_state(std::string key) {
+  if (this->states.find(key) != this->states.end())
+    return this->states[key];
+  return json(json::value_t::object);;
 }
 
-void Session::set_state(std::string new_state) {
-  this->states.push_back(new_state);
-  if (this->states.size() > max_state_size) this->states.pop_front();
+void Session::set_state(std::string key, const json &new_value) {
+  if (this->exiting) return;
+
+  if (state_thread) {
+    if (state_thread->joinable()) {
+      state_thread->join();
+      delete state_thread;
+    }
+  }
+  json last_value = this->get_state(key);
+  this->states[key] = new_value;
+  this->state_thread = new std::thread(fpsi::change_state, this, this->plugins,
+                                       key, last_value, new_value);
+
+  // Write state to DB
+  this->data_handler->create_stt(key, new_value);
 }
 
 /*
   Close threads.
  */
 void Session::finish() {
+  if (this->exiting) return;
+
+  util::log("Killing gui");
+  this->exiting = true;
+
   if (gui_thread)
     if (gui_thread->joinable())
       gui_thread->join();
+  util::log("Killing agg");
   if (aggregate_thread)
     if (aggregate_thread->joinable())
       aggregate_thread->join();
+  util::log("Killing state");
+  if (state_thread)
+    if (state_thread->joinable())
+      state_thread->join();
+
+  util::log("Finished");
 }
 
 }

@@ -26,5 +26,8 @@ std::shared_ptr<Plugin> create_plugin(Session *session, const std::string &plugi
 std::vector<std::shared_ptr<Plugin>> load_plugins(Session *session, const std::vector<std::pair<std::string, json>> &plugins);
 
 void aggregate_data_threads(Session *session, const std::vector<std::shared_ptr<Plugin>> &plugins);
+
+void change_state(Session *session, const std::vector<std::shared_ptr<Plugin>> &plugins,
+                  const std::string &key, const json &last, const json &next);
   
 }

@@ -1,17 +1,8 @@
 * Todo
 ** Systems
-*** Finish plugin header
-*** Write state system
-*** Write data system
-**** Write data synchronization system
-*** Write communication system
-*** Write plugin/hook system
-**** Make plugins execute in a threaded manner
-**** Make sure plugins have a way to edit dataframes
+*** Write socket system?
 ** Plugins
 *** File simulation
+*** Write comm system (multi-nodes)
 ** Features
 *** GUI
-** Research
-*** Use other data serialzation than json/bson
-**** Consider protobuf, flatbuf, and capnbuf

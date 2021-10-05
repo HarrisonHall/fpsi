@@ -11,6 +11,7 @@
 static std::map<util::log_level, std::string> level_to_name = {
   {util::debug, "DBG"},
   {util::info, "INF"},
+  {util::message, "MSG"},
   {util::warning, "WRN"},
   {util::error, "ERR"}
 };
@@ -18,25 +19,32 @@ static std::map<util::log_level, std::string> level_to_name = {
 
 namespace util {
 
+static bool log_verbose = false;
+static bool log_debug = false;
+
 bool log(log_level level, const char* message) {
   std::string file_name = "/tmp/fpsi.log";
   std::ofstream log_file(file_name, std::ofstream::out | std::ofstream::app);
   if (log_file.good()) {
     log_file << level_to_name[level] << ": " << message << std::endl;
   }
-  if (level == error) {
+  if (level == util::error) {
     std::cerr << rang::bgB::red << rang::fg::yellow << level_to_name[level]
               << rang::bg::reset << rang::fg::reset
               << ": " << message << std::endl;
-  } else if (level == warning) {
+  } else if (level == util::warning) {
     std::cout << rang::bg::yellow << rang::fg::red << level_to_name[level]
               << rang::bg::reset << rang::fg::reset
               << ": " << message << std::endl;
-  } else if (level == info) {
+  } else if (level == util::message) {
+    std::cout << rang::fg::cyan << level_to_name[level]
+              << rang::bg::reset << rang::fg::reset
+              << ": " << message << std::endl;
+  } else if (level == util::info && (log_verbose || log_debug)) {
     std::cout << rang::fg::blue << level_to_name[level]
               << rang::fg::reset
               << ": " << message << std::endl;
-  } else if (level == debug) {
+  } else if (level == util::debug && log_debug) {
     std::cout << rang::fg::green << level_to_name[level]
               << rang::fg::reset
               << ": " << message << std::endl;
@@ -62,6 +70,11 @@ bool log(const std::string &message) {
 
 bool log(const std::stringstream &ss) {
   return log(info, ss.str());
+}
+
+void initialize_logging(bool verbose, bool debug) {
+  log_verbose = verbose;
+  log_debug = debug;
 }
 
 }

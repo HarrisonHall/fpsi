@@ -19,8 +19,8 @@ public:
 
   virtual void pre_aggregate(const std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> &raw_data) {}
   virtual void post_aggregate(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {}
-  virtual void pre_state_change(const std::string &last, const std::string &next) {}
-  virtual void post_state_change(const std::string &last, const std::string &next) {}
+  virtual void pre_state_change(const std::string &key, const json &last, const json &next) {}
+  virtual void post_state_change(const std::string &key, const json &last, const json &next) {}
   virtual void send_data(std::vector<DataFrame *> &d) {}
   std::vector<DataFrame *> read_data() {
     std::vector<DataFrame *> d;

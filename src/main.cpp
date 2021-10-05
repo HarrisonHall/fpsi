@@ -16,22 +16,21 @@
 
 
 fpsi::Session *s;
-bool exiting = false;
 
 
 namespace fpsi {
 void interupt_handler(int signum) {
   util::log("Exiting...");
-  exiting = true;
+  s->finish();
 }
 }
 
 int main(int argc, char **argv) {
   signal(SIGINT, fpsi::interupt_handler);
   s = new fpsi::Session("config.yaml", argc, argv);
-  util::log(s->to_string());
+  util::log(util::message, s->to_string());
 
-  while (!exiting) {
+  while (!s->exiting) {
     util::active_sleep(1000);  // 1 second
     s->aggregate_data();
   }

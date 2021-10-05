@@ -38,6 +38,10 @@ void gui_build(Session &session) {
     builder->get_widget_derived("main-window", win);
     app->run(*win);
   }
+
+  // TODO - kill fpsi
+  session.gui_thread = nullptr;
+  session.finish();
   
   return;
 }

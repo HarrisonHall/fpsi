@@ -96,6 +96,7 @@ void aggregate_data_threads(Session *session, const std::vector<std::shared_ptr<
   }
   for (auto thread : threads) {
     thread->join();
+    delete thread;
   }
   
   // Get data
@@ -112,6 +113,28 @@ void aggregate_data_threads(Session *session, const std::vector<std::shared_ptr<
   }
   for (auto thread : threads) {
     thread->join();
+    delete thread;
+  }
+}
+
+void change_state(Session *session, const std::vector<std::shared_ptr<Plugin>> &plugins,
+                  const std::string &key, const json &last, const json &next) {
+  std::vector<std::thread *> threads;
+  for (auto plugin : plugins) {
+    threads.push_back(new std::thread(&Plugin::pre_state_change, plugin.get(), key, last, next));
+  }
+  for (auto thread : threads) {
+    thread->join();
+    delete thread;
+  }
+
+  threads.clear();
+  for (auto plugin : plugins) {
+    threads.push_back(new std::thread(&Plugin::post_state_change, plugin.get(), key, last, next));
+  }
+  for (auto thread : threads) {
+    thread->join();
+    delete thread;
   }
 }
   

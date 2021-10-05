@@ -26,10 +26,12 @@ public:
   bool create_data_source(const std::string &, const json &);
   std::shared_ptr<DataFrame> create_raw(const std::string &source, const json &data);
   std::shared_ptr<DataFrame> create_agg(const std::string &source, const json &data);
+  std::shared_ptr<DataFrame> create_stt(const std::string &source, const json &data);
   bool update_data_frame(const DataFrame &df);
   std::vector<std::shared_ptr<DataFrame>> get_recent_data(const std::string &source);
   std::shared_ptr<DataFrame> get_newest_agg(const std::string &source);
   std::vector<std::string> get_sources();
+
 private:
   double entry_rate = 1.0;  // Number of data aggregates per second
   std::map<std::string, std::shared_ptr<DataSource>> data_sources;

@@ -89,6 +89,18 @@ std::shared_ptr<DataFrame> DataHandler::create_agg(const std::string &source, co
   return df;
 }
 
+std::shared_ptr<DataFrame> DataHandler::create_stt(const std::string &source, const json &data) {
+  util::log(util::debug, "Creating stt");
+
+  std::shared_ptr<DataFrame> df = std::make_shared<DataFrame>(
+    this->session, -1, source, "stt", data
+  );
+  df->set_time(util::to_time_str(util::timestamp()));
+  df->set_id(this->db->insert(*df.get()));  // push into db
+
+  return df;
+}
+
 std::shared_ptr<DataFrame> DataHandler::get_newest_agg(const std::string &source) {
   if (this->data_sources.find(source) != this->data_sources.end()) {
     auto ds = this->data_sources[source];
@@ -117,7 +129,7 @@ std::vector<std::shared_ptr<DataFrame>> DataHandler::get_recent_data(const std::
   }
 
   if (!data.empty())
-    ds->last_raw = data[data.size() - 1];
+    ds->last_raw = data.back();
 
   return data;
 }
