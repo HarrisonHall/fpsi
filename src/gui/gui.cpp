@@ -2,16 +2,41 @@
 #include <iostream>
 #include <memory>
 
+#include <gdkmm/pixbuf.h>
+
 #include "../session/session.hpp"
+#include "../util/logging.hpp"
 
 #include "gui.hpp"
 
+
 namespace fpsi {
 
-FPSIWindow::FPSIWindow(BaseObjectType *obj, Glib::RefPtr<Gtk::Builder> const & builder):
-  Gtk::ApplicationWindow(obj), builder{builder}
+FPSIWindow::FPSIWindow(BaseObjectType *obj, Glib::RefPtr<Gtk::Builder> const & builder)
+  : Gtk::ApplicationWindow(obj), builder{builder}
 {
+  this->builder->get_widget("about-window", this->about_window);
+  Glib::RefPtr<Gdk::Pixbuf> ref_p(Gdk::Pixbuf::create_from_resource("/fpsi/src/gui/logo.png"));
+  this->about_window->set_logo(ref_p);
+  
+  
+  Gtk::MenuItem *about_menu_button = 0;
+  this->builder->get_widget("main-menu-about", about_menu_button);
+  about_menu_button->signal_activate().connect([this](){
+    this->about_window->run();
+    this->about_window->hide();
+  });
 
+  Gtk::MenuItem *quit_menu_button = 0;
+  this->builder->get_widget("quit-button", quit_menu_button);
+  quit_menu_button->signal_activate().connect([this](){
+    this->close();
+  });
+
+  //this->about_window->signal_cancel().connect([this](){this->about_window->hide();});
+  //this->about_window->signal_delete().connect([this](){this->about_window->hide();});
+  //this->about_window->signal_remove().connect([this](){this->about_window->hide();});
+  //this->about_window->signal_focus();
 }
 FPSIWindow::~FPSIWindow() {}
 
@@ -38,8 +63,7 @@ void gui_build(Session &session) {
     builder->get_widget_derived("main-window", win);
     app->run(*win);
   }
-
-  // TODO - kill fpsi
+  
   session.gui_thread = nullptr;
   session.finish();
   

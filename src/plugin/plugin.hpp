@@ -30,18 +30,6 @@ public:
   virtual void read_socket(const json &message) {}
   virtual void send_socket(const json &message) {}
 
-  // Utility
-  virtual std::string get_log() {
-    std::string log_copy = raw_log;
-    raw_log = "";
-    return log_copy;
-  }
-
-protected:
-  void log(std::string note) {
-    raw_log += note;
-  }
-
 private:
   std::string raw_log;
   

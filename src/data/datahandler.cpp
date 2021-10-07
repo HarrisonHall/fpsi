@@ -50,7 +50,6 @@ bool DataHandler::create_data_source(const std::string &name, const json &base_p
 }
 
 std::shared_ptr<DataFrame> DataHandler::create_raw(const std::string &source, const json &data) {
-  util::log(util::debug, "Creating raw");
   if (this->data_sources.find(source) == this->data_sources.end())
     return std::shared_ptr<DataFrame>(nullptr);
 
@@ -60,6 +59,7 @@ std::shared_ptr<DataFrame> DataHandler::create_raw(const std::string &source, co
   df->set_time(util::to_time_str(util::timestamp()));
   df->set_id(this->db->insert(*df.get()));  // push into db
   this->data_sources[source]->raw_data.push_back(df);  // track it
+  util::log("Created raw with id %d", df->get_id());
 
   // Get rid of old packets
   while (this->data_sources[source]->raw_data.size() > this->MAX_DATA_IN_MEMORY) {
@@ -122,9 +122,13 @@ std::vector<std::shared_ptr<DataFrame>> DataHandler::get_recent_data(const std::
     for (auto df : ds->raw_data) data.push_back(df);
   } else {
     auto next_good_df = std::find(ds->raw_data.begin(), ds->raw_data.end(), ds->last_raw)++;
-    while (next_good_df != ds->raw_data.end()) {
-      data.push_back(*next_good_df);
-      next_good_df++;
+    if (next_good_df != ds->raw_data.end()) {
+      while (next_good_df != ds->raw_data.end()) {
+        data.push_back(*next_good_df);
+        next_good_df++;
+      }
+    } else {
+      for (auto df : ds->raw_data) data.push_back(df);
     }
   }
 

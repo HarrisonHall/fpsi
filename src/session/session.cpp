@@ -43,10 +43,6 @@ Session::Session(std::string config_file, int argc, char **argv) : data_handler(
     this->gui_thread = new std::thread(gui_build, std::ref(*this));
   }
 #endif
-
-  for (auto plugin : this->plugins) {
-    util::log("plugin message: %s", plugin->get_log().c_str());
-  }
 }
 
 void Session::parse_cli(int argc, char **argv) {

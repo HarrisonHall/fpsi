@@ -3,7 +3,7 @@
 
 The MIT License (MIT)
 
-Copyright (c) 
+Copyright (c) Harrison Hall
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,45 @@ Author: Harrison Hall
 <interface>
   <requires lib="gtk+" version="3.0"/>
   <!-- interface-license-type mit -->
+  <!-- interface-name FPSI -->
+  <!-- interface-copyright Harrison Hall -->
   <!-- interface-authors Harrison Hall -->
+  <object class="GtkAboutDialog" id="about-window">
+    <property name="can-focus">False</property>
+    <property name="destroy-with-parent">True</property>
+    <property name="type-hint">dialog</property>
+    <property name="program-name">FPSI</property>
+    <property name="version">0.1b</property>
+    <property name="copyright" translatable="yes">Harrison Hall</property>
+    <property name="comments" translatable="yes">Data and state control software with dynamic plugin support for use with single or multi-node systems. </property>
+    <property name="website">https://github.com/HarrisonHall/fpsi</property>
+    <property name="website-label" translatable="yes">github</property>
+    <property name="authors">Harrison Hall</property>
+    <property name="documenters">Harrison Hall</property>
+    <property name="logo-icon-name">image-missing</property>
+    <property name="license-type">mit-x11</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox" id="about-button-box">
+            <property name="can-focus">False</property>
+            <property name="layout-style">end</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkWindow" id="main-window">
     <property name="name">Main Window</property>
     <property name="visible">True</property>
@@ -60,25 +98,7 @@ Author: Harrison Hall
                     <property name="can-focus">False</property>
                     <child>
                       <object class="GtkImageMenuItem">
-                        <property name="label">gtk-new</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="use-underline">True</property>
-                        <property name="use-stock">True</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkImageMenuItem">
                         <property name="label">gtk-open</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="use-underline">True</property>
-                        <property name="use-stock">True</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkImageMenuItem">
-                        <property name="label">gtk-save</property>
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="use-underline">True</property>
@@ -101,7 +121,7 @@ Author: Harrison Hall
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem">
+                      <object class="GtkImageMenuItem" id="quit-button">
                         <property name="label">gtk-quit</property>
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
@@ -182,7 +202,7 @@ Author: Harrison Hall
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
-                      <object class="GtkImageMenuItem">
+                      <object class="GtkImageMenuItem" id="main-menu-about">
                         <property name="label">gtk-about</property>
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>

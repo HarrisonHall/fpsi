@@ -6,3 +6,5 @@ config.yaml
 *#
 *.o
 *.so
+
+logo.c
