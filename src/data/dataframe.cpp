@@ -24,11 +24,12 @@ DataFrame::DataFrame() {
 }
 
 DataFrame::DataFrame(const DataFrame &dataframe) {
-  this->id = 0;
+  this->id = dataframe.id;
   this->source = dataframe.source;
   this->type = dataframe.type;
   this->data = dataframe.data;
   this->time = util::to_time_str(util::timestamp());
+  this->data = dataframe.data;
 }
 
 DataFrame::DataFrame(Session *session) : DataFrame() {
@@ -52,7 +53,8 @@ DataFrame::DataFrame(
 
 DataFrame::~DataFrame() {
   util::log(util::debug, "DataFrame w/ id %d just updated in db", this->id);
-  this->session->data_handler->update_data_frame(*this);
+  if (this->session)
+    this->session->data_handler->update_data_frame(*this);
 }
 
 json DataFrame::to_json() {
@@ -72,48 +74,49 @@ std::string DataFrame::to_string() {
 uint64_t DataFrame::get_id() const {
   return this->id;
 }
-void DataFrame::set_id(uint64_t id) {
+void DataFrame::set_id(const uint64_t id) {
   const std::lock_guard<std::mutex> lock(this->data_lock);
   this->id = id;
 }
 std::string DataFrame::get_source() const {
   return this->source;
 }
-void DataFrame::set_source(std::string source) {
+void DataFrame::set_source(const std::string source) {
   const std::lock_guard<std::mutex> lock(this->data_lock);
   this->source = source;
 }
 std::string DataFrame::get_time() const {
   return this->time;
 }
-void DataFrame::set_time(std::string time) {
+void DataFrame::set_time(const std::string time) {
   const std::lock_guard<std::mutex> lock(this->data_lock);
   this->time = time;
 }
 std::string DataFrame::get_type() const {
   return this->type;
 }
-void DataFrame::set_type(std::string type) {
+void DataFrame::set_type(const std::string type) {
   const std::lock_guard<std::mutex> lock(this->data_lock);
   this->type = type;
 }
 std::vector<char> DataFrame::get_bson() const {
-  // TODO - optimize
-  if (data.empty()) return std::vector<char>();
-  auto as_ui = json::to_bson(this->data);
-  std::vector<char> rval(as_ui.size());
-  memcpy(rval.data(), as_ui.data(), as_ui.size());
-  return rval;
+  // TODO optimize
+  std::vector<char> ret;
+  std::vector<uint8_t> as_bson = json::to_bson(this->data);
+  ret.resize(as_bson.size());
+  memcpy(ret.data(), as_bson.data(), as_bson.size());
+  return ret;
 }
-void DataFrame::set_bson(std::vector<char> bson) {
+void DataFrame::set_bson(const std::vector<char> bson) {
   const std::lock_guard<std::mutex> lock(this->data_lock);
   if (bson.empty()) return;
-  this->data = json::parse(bson.data());
+  this->data = json::from_bson(bson.data(), bson.data() + bson.size());
 }
+
 json DataFrame::get_data() {
   return this->data;
 }
-void DataFrame::set_data(json data) {
+void DataFrame::set_data(const json data) {
   const std::lock_guard<std::mutex> lock(this->data_lock);
   this->data = data;
 }

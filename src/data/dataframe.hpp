@@ -51,7 +51,7 @@ private:
   std::string type;  // raw, agg
   json data = json(json::value_t::object);
   std::string time;
-  Session *session;
+  Session *session = nullptr;
   std::mutex data_lock;
 };
 

@@ -12,8 +12,6 @@
 #include "../fpsi.hpp"
 
 
-
-
 extern const size_t max_state_size;
 
 namespace fpsi {
