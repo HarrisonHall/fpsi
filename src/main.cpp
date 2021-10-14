@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
   util::log(util::message, s->to_string());
 
   while (!s->exiting) {
-    util::active_sleep(1000);  // 1 second
+    util::active_sleep(400);  // .4 seconds
     s->aggregate_data();
   }
 

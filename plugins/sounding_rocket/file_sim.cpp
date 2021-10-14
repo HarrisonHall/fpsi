@@ -2,17 +2,19 @@
   counter.cpp
  */
 
-#include "fpsi/src/plugin/plugin.hpp"
-
-#include <iostream>
 #include <unistd.h>
+
 #include <cstdio>
-#include <thread>
+#include <deque>
+#include <iostream>
 #include <fstream>
+#include <thread>
 
 #include "fpsi/src/session/session.hpp"
 #include "fpsi/src/data/datahandler.hpp"
 #include "fpsi/src/util/logging.hpp"
+
+#include "fpsi/src/plugin/plugin.hpp"
 
 
 namespace fpsi {
