@@ -1,8 +1,8 @@
 * Todo
-** Systems
-*** Write socket system?
-** Plugins
-*** File simulation
-*** Write comm system (multi-nodes)
-** Features
-*** GUI
+** Communications
+- Add communications methods to plugins and a threading system for the
+  session so that plugins can implement cross-node communications
+** GUI
+- Add log tab, data tab, plugins tab, and settings tab
+- Plugins tab should have place where plugins can add their own stuff like
+  graphs
