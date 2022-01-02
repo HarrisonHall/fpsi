@@ -8,3 +8,9 @@ config.yaml
 *.so
 
 logo.c
+
+# Refactor
+debug/
+target/
+Cargo.lock
+**/*.rs.bk
