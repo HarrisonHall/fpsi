@@ -3,6 +3,7 @@
 - Add communications methods to plugins and a threading system for the
   session so that plugins can implement cross-node communications
 ** GUI
+- Replace gtk work with dear imgui
 - Add log tab, data tab, plugins tab, and settings tab
 - Plugins tab should have place where plugins can add their own stuff like
   graphs

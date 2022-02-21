@@ -3,7 +3,9 @@
 #include <map>
 #include <memory>
 #include <tuple>
+#include <type_traits>
 #include <vector>
+#include <utility>
 
 #include "../fpsi.hpp"
 
@@ -38,9 +40,47 @@ private:
   
   double entry_rate = 1.0;  // Number of data aggregates per second
   std::map<std::string, std::shared_ptr<DataSource>> data_sources;
-  sqlite_orm::internal::storage_t<sqlite_orm::internal::table_t<fpsi::DataFrame, sqlite_orm::internal::column_t<fpsi::DataFrame, unsigned long, unsigned long (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(unsigned long), sqlite_orm::constraints::autoincrement_t, sqlite_orm::constraints::primary_key_t<>>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::basic_string<char>, std::basic_string<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::basic_string<char>)>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::basic_string<char>, std::basic_string<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::basic_string<char>)>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::vector<char>, std::vector<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::vector<char>)>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::basic_string<char>, std::basic_string<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::basic_string<char>)>>> *db;
   Session *session;
   static const unsigned int MAX_DATA_IN_MEMORY = 10;
+
+  auto db_setup() {
+    return sql::make_storage(
+      "/tmp/fpsi.sqlite",
+	  sql::make_table(
+	    "packets",
+		sql::make_column("id", &DataFrame::get_id, &DataFrame::set_id,
+						 sql::autoincrement(), sql::primary_key()),
+		sql::make_column("source", &DataFrame::get_source,
+						 &DataFrame::set_source),
+		sql::make_column("time", &DataFrame::get_time,
+						 &DataFrame::set_time),
+		sql::make_column("data", &DataFrame::set_bson,
+						 &DataFrame::get_bson),
+		sql::make_column("type", &DataFrame::set_type,
+						 &DataFrame::get_type)));
+  }
+
+	using dbType = decltype(db_setup());
+
+	dbType db;
+	//decltype(&DataHandler::db_setup) db;
+	//auto *db;
+	//auto db;
+
+	//decltype(DataHandler::db_setup()) db;
+	//using dbType = decltype(db_setup());
+	//dbType db;
+	//decltype(&DataHandler::db_setup) dbType;
+	//using dbType = decltype(&DataHandler::db_setup);
+	
+	//decltype((&DataHandler::db_setup)()) db;
+	
+	//using dbType = decltype(std::function{&DataHandler::db_setup})::result_type;
+	//dbType db;
+
+	//decltype(std::declval<DataHandler>().db_setup()) db;
+	//static auto db;
 };
+
 
 }  // namespace fpsi

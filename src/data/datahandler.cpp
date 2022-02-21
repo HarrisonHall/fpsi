@@ -19,21 +19,21 @@
 
 namespace fpsi {
 
-DataHandler::DataHandler(Session *session) {
-  this->db = new sqlite_orm::internal::storage_t<sqlite_orm::internal::table_t<fpsi::DataFrame, sqlite_orm::internal::column_t<fpsi::DataFrame, unsigned long, unsigned long (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(unsigned long), sqlite_orm::constraints::autoincrement_t, sqlite_orm::constraints::primary_key_t<>>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::basic_string<char>, std::basic_string<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::basic_string<char>)>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::basic_string<char>, std::basic_string<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::basic_string<char>)>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::vector<char>, std::vector<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::vector<char>)>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::basic_string<char>, std::basic_string<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::basic_string<char>)>>>(
-    sql::make_storage(
-    "/tmp/fpsi.sqlite",
-    sql::make_table(
-      "packets",
-      sql::make_column("id", &DataFrame::set_id, &DataFrame::get_id, sql::autoincrement(), sql::primary_key()),
-      sql::make_column("source", &DataFrame::set_source, &DataFrame::get_source),
-      sql::make_column("time", &DataFrame::set_time, &DataFrame::get_time),
-      sql::make_column("data", &DataFrame::set_bson, &DataFrame::get_bson),
-      sql::make_column("type", &DataFrame::set_type, &DataFrame::get_type)
-      )
-    )
-  );
-  this->db->sync_schema();
+DataHandler::DataHandler(Session *session) : db(db_setup()) {
+  // this->db = new sqlite_orm::internal::storage_t<sqlite_orm::internal::table_t<fpsi::DataFrame, sqlite_orm::internal::column_t<fpsi::DataFrame, unsigned long, unsigned long (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(unsigned long), sqlite_orm::constraints::autoincrement_t, sqlite_orm::constraints::primary_key_t<>>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::basic_string<char>, std::basic_string<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::basic_string<char>)>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::basic_string<char>, std::basic_string<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::basic_string<char>)>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::vector<char>, std::vector<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::vector<char>)>, sqlite_orm::internal::column_t<fpsi::DataFrame, std::basic_string<char>, std::basic_string<char> (fpsi::DataFrame::*)() const, void (fpsi::DataFrame::*)(std::basic_string<char>)>>>(
+  //   sql::make_storage(
+  //   "/tmp/fpsi.sqlite",
+  //   sql::make_table(
+  //     "packets",
+  //     sql::make_column("id", &DataFrame::set_id, &DataFrame::get_id, sql::autoincrement(), sql::primary_key()),
+  //     sql::make_column("source", &DataFrame::set_source, &DataFrame::get_source),
+  //     sql::make_column("time", &DataFrame::set_time, &DataFrame::get_time),
+  //     sql::make_column("data", &DataFrame::set_bson, &DataFrame::get_bson),
+  //     sql::make_column("type", &DataFrame::set_type, &DataFrame::get_type)
+  //     )
+  //   )
+  // );
+  this->db.sync_schema();
   this->load_last_session();
   
   this->session = session;
@@ -58,7 +58,7 @@ std::shared_ptr<DataFrame> DataHandler::create_raw(const std::string &source, co
     this->session, -1, source, "raw", data
   );
   df->set_time(util::to_time_str(util::timestamp()));
-  df->set_id(this->db->insert(*df.get()));  // push into db
+  df->set_id(this->db.insert(*df.get()));  // push into db
   this->data_sources[source]->raw_data.push_back(df);  // track it
   util::log("Created raw with id %d", df->get_id());
 
@@ -88,7 +88,7 @@ std::shared_ptr<DataFrame> DataHandler::create_agg(const std::string &source, co
     this->session, -1, source, "agg", data
   );
   df->set_time(util::to_time_str(util::timestamp()));
-  df->set_id(this->db->insert(*df.get()));  // push into db
+  df->set_id(this->db.insert(*df.get()));  // push into db
   this->data_sources[source]->agg_data.push_back(df);  // track it
 
   // Get rid of old packets
@@ -112,7 +112,7 @@ std::shared_ptr<DataFrame> DataHandler::create_stt(const std::string &source, co
     this->session, -1, source, "stt", data
   );
   df->set_time(util::to_time_str(util::timestamp()));
-  df->set_id(this->db->insert(*df.get()));  // push into db
+  df->set_id(this->db.insert(*df.get()));  // push into db
 
   return df;
 }
@@ -134,7 +134,7 @@ std::shared_ptr<DataFrame> DataHandler::get_newest_agg(const std::string &source
 }
 
 bool DataHandler::update_data_frame(const DataFrame &df) {
-  this->db->update(df);
+  this->db.update(df);
   return true;
 }
 
@@ -170,7 +170,7 @@ std::vector<std::string> DataHandler::get_sources() {
 }
 
 void DataHandler::load_last_session() {
-  auto unique_sources = this->db->select(sql::distinct(&DataFrame::get_source));
+  auto unique_sources = this->db.select(sql::distinct(&DataFrame::get_source));
   
   for (auto source : unique_sources) {
     using namespace sqlite_orm;  // necessary for and to work in where
@@ -178,7 +178,7 @@ void DataHandler::load_last_session() {
     this->create_data_source(source);
       
     // Set raw
-    auto last_raw = this->db->get_all<DataFrame>(
+    auto last_raw = this->db.get_all<DataFrame>(
       sql::where(
         sql::like(&DataFrame::get_source, source) and
         sql::like(&DataFrame::get_type, "raw")
@@ -191,7 +191,7 @@ void DataHandler::load_last_session() {
     }
 
     // Set agg
-    auto last_agg = this->db->get_all<DataFrame>(
+    auto last_agg = this->db.get_all<DataFrame>(
       sql::where(
         sql::like(&DataFrame::get_source, source) and
         sql::like(&DataFrame::get_type, "agg")
@@ -204,7 +204,7 @@ void DataHandler::load_last_session() {
     }
 
     // Set stt
-    auto last_stt = this->db->get_all<DataFrame>(
+    auto last_stt = this->db.get_all<DataFrame>(
       sql::where(
         sql::like(&DataFrame::get_source, source) and
         sql::like(&DataFrame::get_type, "stt")
