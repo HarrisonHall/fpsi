@@ -6,14 +6,14 @@
 
 #include <string>
 
-#include "../session/session.hpp"
+#include "session/session.hpp"
+#include "util/time.hpp"
+#include "fpsi.hpp"
 
 #include "dataframe.hpp"
-
-#include "../util/time.hpp"
-#include "../fpsi.hpp"
-
 #include "datahandler.hpp"
+
+
 
 namespace fpsi{
 

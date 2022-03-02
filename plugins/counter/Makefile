@@ -1,9 +1,13 @@
+LOCAL_LIBS = -I./fpsi/src -I./fpsi/include
+INCLUDE_LOC = -I./fpsi/include/yaml-cpp/include/yaml-cpp -I./fpsi/include/yaml-cpp/build -L./fpsi/include/yaml-cpp/build
+LIBS = $(LOCAL_LIBS) $(INCLUDE_LOC)
+
 
 default: all
 
 all: counter.cpp
-	g++ -c -fPIC counter.cpp -o counter.o
-	g++ counter.o -shared -o counter.so
+	$(CXX) $(LIBS) -c -fPIC counter.cpp -o counter.o
+	$(CXX) $(LIBS) counter.o -shared -o counter.so
 
 clean:
-	rm -f *.o
+	rm -f *.o *.so

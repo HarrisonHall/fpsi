@@ -11,20 +11,16 @@
 #include <vector>
 #include <utility>
 
-#include "../../include/yaml.h"
-#include "../../include/CLI11.hpp"
+#include "yaml.h"
+#include "CLI11.hpp"
 
-#include "../plugin/plugin_handler.hpp"
-#include "../plugin/plugin.hpp"
-#include "../util/yaml_json.hpp"
-#include "../util/logging.hpp"
+#include "plugin/plugin_handler.hpp"
+#include "plugin/plugin.hpp"
+#include "util/yaml_json.hpp"
+#include "util/logging.hpp"
 
 
-#ifdef GUI
-#include "../gui/gui.hpp"
-#endif
-
-#include "../data/datahandler.hpp"
+#include "data/datahandler.hpp"
 #include "session.hpp"
 
 const size_t max_state_size = 10;
@@ -37,12 +33,6 @@ Session::Session(std::string config_file, int argc, char **argv) : data_handler(
   parse_cli(argc, argv);
 
   this->plugins = load_plugins(this, get_plugins(config_yaml));
-
-#ifdef GUI
-  if (this->show_gui) {
-    this->gui_thread = new std::thread(gui_build, std::ref(*this));
-  }
-#endif
 }
 
 void Session::parse_cli(int argc, char **argv) {

@@ -8,8 +8,9 @@
 #include <deque>
 #include <memory>
 
-#include "../../include/yaml.h"
-#include "../fpsi.hpp"
+#include "yaml.h"
+
+#include "fpsi.hpp"
 
 
 extern const size_t max_state_size;
