@@ -19,16 +19,34 @@ fpsi::Session *s;
 
 
 namespace fpsi {
-void interupt_handler(int signum) {
-  util::log("Exiting...");
-  s->finish();
+// Handle ctrl+c interrupt
+// On second interrupt force-quits fpsi
+void interrupt_handler(int signum) {
+	static bool already_called = false;
+
+	if (!already_called) {
+		util::log(util::info, "Exiting...");
+		s->finish();
+		already_called = true;
+	} else {
+		util::log(util::warning, "Forcing exit.");
+		exit(1);
+	}
+	
 }
 }
 
 int main(int argc, char **argv) {
-  signal(SIGINT, fpsi::interupt_handler);
-  s = new fpsi::Session("config.yaml", argc, argv);
-  util::log(util::message, s->to_string());
+	// Set SIGINT (ctrl+c) to call interupt_handler
+  signal(SIGINT, fpsi::interrupt_handler);
+
+	// Create global session object
+  s = new fpsi::Session(argc, argv);
+
+	// Create startup message
+	std::stringstream startup_message;
+  startup_message << "FPSI Node: " << s->get_name();
+  util::log(util::message, startup_message.str());
 
   while (!s->exiting) {
     util::active_sleep(400);  // .4 seconds

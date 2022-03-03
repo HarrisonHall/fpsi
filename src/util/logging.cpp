@@ -49,6 +49,11 @@ bool log(log_level level, const char* message) {
               << rang::fg::reset
               << ": " << message << std::endl;
   }
+
+	if (level == util::raw) {
+		std::cout << message << std::endl;
+	}
+	
   if (log_file.good()) {
     log_file.close();
     return true;

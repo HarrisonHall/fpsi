@@ -22,40 +22,35 @@ class Plugin;
 
 class Session {
 public:
-  explicit Session(std::string config_file, int argc, char **argv);
+  explicit Session(int argc, char **argv);
   ~Session();
-  void parse_cli(int, char**);
+	
+  void parse_cli(int, char**);  // Parse CLI flags
 
-  void aggregate_data();
+  std::string get_name();  // Get name of current fpsi node (from config)
+	std::shared_ptr<Plugin> get_plugin(const std::string &name);  // Get plugin by name
 
-  std::string to_string();
+  std::vector<std::pair<std::string, json>> get_plugins(YAML::Node &);  // Parse plugin information from yaml
 
-  std::string get_name();
-
-  std::vector<std::pair<std::string, json>> get_plugins(YAML::Node &);
-
-  std::string get_glade_file();
-
-  void set_state(std::string, const json &);
-  const json get_state(std::string);
+  void set_state(std::string, const json &);  // Set state in state-registry
+  const json get_state(std::string);  // Get state from state-registry
 
   std::shared_ptr<DataHandler> data_handler;
 
-  void finish();
+	void aggregate_data();  // Aggregate data into new dataobjects
+  void finish();  // Close threads so fpsi can exit
 
-  std::thread *gui_thread = nullptr;
   std::thread *aggregate_thread = nullptr;
   std::thread *state_thread = nullptr;
   bool exiting = false;
   
 private:
-  json raw_config;
-  bool show_gui = false;
-  bool verbose = false;
-  bool debug = false;
-  std::string glade_file = "";
-  std::map<std::string, json> states;
-  std::vector<std::shared_ptr<Plugin>> plugins;
+  json raw_config;  // Parsed config file (converted from yaml)
+	std::string config_path = "config.yaml";  // Path to config file
+  bool verbose = false;  // Prints verbose (info & debug) information
+  bool debug = false;  // Prints debug information
+  std::map<std::string, json> states;  // Registry of state variables
+  std::vector<std::shared_ptr<Plugin>> plugins;  // List of plugins running (all unique)
 };
 
 }

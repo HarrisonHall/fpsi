@@ -14,7 +14,7 @@ namespace fpsi {
   
 class Plugin {
 public:
-  Plugin(Session *session, const json &plugin_config) {}
+  Plugin(std::string plugin_name, Session *session, const json &plugin_config) : name(plugin_name) {}
   virtual ~Plugin() {}
 
   virtual void pre_aggregate(const std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> &raw_data) {}
@@ -29,6 +29,8 @@ public:
   virtual void *get_gui() { return nullptr; }
   virtual void read_socket(const json &message) {}
   virtual void send_socket(const json &message) {}
+
+	const std::string name;
 
 private:
   std::string raw_log;

@@ -12,7 +12,7 @@
 
 namespace util {
 
-enum log_level { debug, info, message, warning, error };
+enum log_level { debug, info, message, warning, error, raw };
 
 bool log(log_level, const char*);
 

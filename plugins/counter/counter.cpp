@@ -18,7 +18,8 @@ namespace fpsi {
 
 class Counter : public Plugin {
 public:
-  Counter(Session *session, const json &plugin_config) : Plugin(session, plugin_config) {
+  Counter(Session *session, const json &plugin_config) :
+		Plugin("Counter", session, plugin_config) {
     log(util::debug, "Created counter");
     //session->data_handler->create_data_source("counter", this->base_packet);  // TODO
 		session->data_handler->create_data_source("counter");
