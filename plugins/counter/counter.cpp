@@ -1,6 +1,4 @@
-/*
-  counter.cpp
- */
+// counter.cpp
 
 #include "fpsi/src/plugin/plugin.hpp"
 
@@ -18,14 +16,13 @@ namespace fpsi {
 
 class Counter : public Plugin {
 public:
-  Counter(Session *session, const json &plugin_config) :
-		Plugin("Counter", session, plugin_config) {
+  Counter(const std::string &plugin_name, const json &plugin_config) :
+		Plugin(plugin_name, plugin_config) {
     log(util::debug, "Created counter");
-    //session->data_handler->create_data_source("counter", this->base_packet);  // TODO
-		session->data_handler->create_data_source("counter");
-    this->session = session;
+		void *s = &(::fpsi::session);
+		::fpsi::session->data_handler->create_data_source("counter");
     counter_thread = new std::thread(&Counter::count, this);
-    this->session->set_state("counter_level", {{"level", 0}});
+    ::fpsi::session->set_state("counter_level", {{"level", 0}});
   }
 
   ~Counter() {
@@ -42,7 +39,7 @@ public:
     json new_data = {
       {"value", avg}
     };
-    auto agg_df = this->session->data_handler->create_agg("counter", new_data);
+    auto agg_df = ::fpsi::session->data_handler->create_agg("counter", new_data);
   }
 
   void post_aggregate(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {
@@ -52,12 +49,12 @@ public:
     if (df) {
       util::log(util::warning, "Got avg value %f", value);
     }
-    int level = this->session->get_state("counter_level").value<int>("level", 0);
+    int level = ::fpsi::session->get_state("counter_level").value<int>("level", 0);
     if (value <= 10) {
     } else if (value >= 10 && value <= 20 && level != 1) {
-      this->session->set_state("counter_level", {{"level", 1}});
+      ::fpsi::session->set_state("counter_level", {{"level", 1}});
     } else if (value >= 20 && level != 2) {
-      this->session->set_state("counter_level", {{"level", 2}});
+      ::fpsi::session->set_state("counter_level", {{"level", 2}});
     }
   }
 
@@ -69,7 +66,6 @@ public:
   }
 
 private:
-  Session *session;
   std::thread *counter_thread;
   bool die = false;
   size_t value = 0;
@@ -82,7 +78,7 @@ private:
       if (this->die) return;
       value++;
       base_packet["value"] = value;
-      auto df = session->data_handler->create_raw("counter", base_packet);
+      auto df = ::fpsi::session->data_handler->create_raw("counter", base_packet);
       usleep(300000);  // .3 seconds
     }
   }
@@ -91,6 +87,6 @@ private:
 
 }
 
-extern "C" fpsi::Plugin *construct_plugin(fpsi::Session *session, const json &plugin_config) {
-  return new fpsi::Counter(session, plugin_config);
+extern "C" fpsi::Plugin *construct_plugin(const std::string &plugin_name, const json &plugin_config) {
+  return new fpsi::Counter(plugin_name, plugin_config);
 }

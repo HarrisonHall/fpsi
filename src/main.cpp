@@ -6,8 +6,7 @@
 #include <iostream>
 #include <unistd.h>
 
-
-#include "../include/yaml.h"
+#include "yaml.h"
 
 #include "fpsi.hpp"
 #include "session/session.hpp"
@@ -15,10 +14,10 @@
 #include "util/time.hpp"
 
 
-fpsi::Session *s;
-
-
 namespace fpsi {
+
+Session *session = nullptr;
+
 // Handle ctrl+c interrupt
 // On second interrupt force-quits fpsi
 void interrupt_handler(int signum) {
@@ -26,14 +25,14 @@ void interrupt_handler(int signum) {
 
 	if (!already_called) {
 		util::log(util::info, "Exiting...");
-		s->finish();
+		session->finish();
 		already_called = true;
 	} else {
 		util::log(util::warning, "Forcing exit.");
 		exit(1);
-	}
-	
+	}	
 }
+
 }
 
 int main(int argc, char **argv) {
@@ -41,20 +40,20 @@ int main(int argc, char **argv) {
   signal(SIGINT, fpsi::interrupt_handler);
 
 	// Create global session object
-  s = new fpsi::Session(argc, argv);
+  fpsi::session = new fpsi::Session(argc, argv);
+	
 
 	// Create startup message
 	std::stringstream startup_message;
-  startup_message << "FPSI Node: " << s->get_name();
-  util::log(util::message, startup_message.str());
+  util::log(util::message, "FPSI Node: %s", fpsi::session->get_name().c_str());
 
-  while (!s->exiting) {
-    util::active_sleep(400);  // .4 seconds
-    s->aggregate_data();
+  while (!fpsi::session->exiting) {
+    util::active_sleep_since_last(250);  // .25 seconds
+    fpsi::session->aggregate_data();
   }
 
-  s->finish();
+  fpsi::session->finish();
 
-  delete s;
+  delete fpsi::session;
   return 0;
 }

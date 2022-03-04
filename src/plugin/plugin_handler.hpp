@@ -11,7 +11,7 @@
 
 #include "plugin.hpp"
 
-#include "../fpsi.hpp"
+#include "fpsi.hpp"
 
 
 namespace fpsi {

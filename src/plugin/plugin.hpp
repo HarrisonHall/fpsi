@@ -4,17 +4,17 @@
 #include <map>
 #include <vector>
 
-#include "../fpsi.hpp"
+#include "fpsi.hpp"
 
-#include "../session/session.hpp"
-#include "../data/dataframe.hpp"
+#include "session/session.hpp"
+#include "data/dataframe.hpp"
 
 
 namespace fpsi {
   
 class Plugin {
 public:
-  Plugin(std::string plugin_name, Session *session, const json &plugin_config) : name(plugin_name) {}
+  Plugin(std::string plugin_name, const json &plugin_config) : name(plugin_name) {}
   virtual ~Plugin() {}
 
   virtual void pre_aggregate(const std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> &raw_data) {}
@@ -32,11 +32,9 @@ public:
 
 	const std::string name;
 
-private:
-  std::string raw_log;
-  
 };
 
 }
 
-extern "C" fpsi::Plugin *construct_plugin(fpsi::Session *session,const json &plugin_config);
+// Provide this function so that fpsi can acquire the plugin
+extern "C" fpsi::Plugin *construct_plugin(const std::string &plugin_name, const json &plugin_config);

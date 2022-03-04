@@ -1,0 +1,11 @@
+name: "Counter Example"
+
+# DEBUG decides to print information
+DEBUG: true
+
+plugins:
+  counter:
+    path: "counter.so"
+    config:
+      a: "b"
+      c: "d"

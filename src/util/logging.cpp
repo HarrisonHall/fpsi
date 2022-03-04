@@ -1,11 +1,13 @@
-#include "logging.hpp"
+// logging.cpp
 
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <utility>
 
-#include "../../include/rang.hpp"
+#include "rang.hpp"
+
+#include "logging.hpp"
 
 
 static std::map<util::log_level, std::string> level_to_name = {

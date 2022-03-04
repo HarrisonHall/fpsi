@@ -1,17 +1,14 @@
-/*
-  time.cpp
- */
-
+// time.cpp
+// Implementations for basic time-related functions
 
 #include <chrono>
 #include <ctime>
 #include <iostream>
 #include <sstream>
 
+#include "date.h"
 
-#include "../../include/date.h"
 #include "logging.hpp"
-
 #include "time.hpp"
 
 
@@ -51,12 +48,24 @@ std::string to_time_str(unsigned long long timestamp) {
   return date::format("%FT%TZ", date::floor<std::chrono::milliseconds>(tp));
 }
 
+// Sleep for a given time as accurately as possible
 void active_sleep(uint32_t ms) {
   struct timespec ts;
   ts.tv_sec = ms / 1000;
   ts.tv_nsec = ms % 1000 * 1000000;
 
   while (nanosleep(&ts, &ts) == -1 && errno == EINTR);
+}
+
+// Sleep only the amount of time necessary in excess since last call
+void active_sleep_since_last(uint32_t ms) {
+	static auto last_time = std::chrono::high_resolution_clock::now();
+	auto this_time = std::chrono::high_resolution_clock::now();
+	auto time_since_ms =  std::chrono::duration_cast<std::chrono::milliseconds>(this_time - last_time).count();
+	if (time_since_ms < ms) {
+		active_sleep(ms - time_since_ms);
+	}
+	last_time = this_time;
 }
 
 }  // namespace util

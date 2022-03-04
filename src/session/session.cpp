@@ -5,7 +5,6 @@
 #include <cmath>
 #include <filesystem>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <thread>
 #include <queue>
@@ -29,6 +28,7 @@ const size_t max_state_size = 10;
 namespace fpsi {
 
 Session::Session(int argc, char **argv) : data_handler(new DataHandler(this)) {
+	::fpsi::session = this;  // Session should be a global singleton
   parse_cli(argc, argv);
 	auto config_yaml = YAML::LoadFile(this->config_path);
 	raw_config = util::from_yaml(config_yaml);
@@ -61,9 +61,7 @@ void Session::parse_cli(int argc, char **argv) {
 	// Quit if config does not exist
 	std::filesystem::path config_file(this->config_path);
 	if (!std::filesystem::exists(config_file)) {
-		std::stringstream fnf_message;
-		fnf_message << this->config_path << " does not exist";
-		util::log(util::error, fnf_message.str());
+		util::log(util::error, "%s does not exist", this->config_path.c_str());
 		exit(1);
 	}
 
@@ -103,8 +101,8 @@ std::vector<std::pair<std::string, json>> Session::get_plugins(YAML::Node &confi
   YAML::Node config_plugins = config_yaml["plugins"];
   for (auto plug_iter : config_plugins) {
     std::string plug_name = plug_iter.first.as<std::string>("");
-    json plug_conf = util::from_yaml(plug_iter.second);
-    plugins.push_back(std::make_pair(plug_name, plug_conf));
+    json plug_info = util::from_yaml(plug_iter.second);
+    plugins.push_back(std::make_pair(plug_name, plug_info));
   }
   return plugins;
 }

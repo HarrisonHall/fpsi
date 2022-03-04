@@ -8,7 +8,7 @@
 #include <vector>
 #include <utility>
 
-#include "../fpsi.hpp"
+#include "fpsi.hpp"
 
 
 namespace fpsi {

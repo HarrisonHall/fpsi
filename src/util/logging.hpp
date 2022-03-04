@@ -12,6 +12,12 @@
 
 namespace util {
 
+// debug is for debugging
+// info is for misc information
+// message is for general usage that should notify the user
+// warning is for anything that isn't intended and warrants review
+// error is for major system issues that should alert the user
+// raw is for printing without a log level
 enum log_level { debug, info, message, warning, error, raw };
 
 bool log(log_level, const char*);
@@ -38,9 +44,6 @@ bool log(const char* message, Params &&... params) {
 bool log(const std::stringstream&);
 
 void initialize_logging(bool verbose = false, bool debug = false);
-
-//bool initialized_log = false;
-//bool initialize_log(const fpsi::Session &session);
 
 }
 

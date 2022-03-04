@@ -11,15 +11,15 @@
 #include <vector>
 #include <utility>
 
-#include "../../include/yaml.h"
+#include "yaml.h"
 #include "plugin.hpp"
-#include "../util/logging.hpp"
 
-#include "../session/session.hpp"
-#include "../data/datasource.hpp"
-#include "../data/datahandler.hpp"
+#include "fpsi.hpp"
 
-#include "../fpsi.hpp"
+#include "session/session.hpp"
+#include "data/datasource.hpp"
+#include "data/datahandler.hpp"
+#include "util/logging.hpp"
 
 
 namespace fpsi {
@@ -28,8 +28,8 @@ size_t MAX_PLUGINS = 1024;
 
 std::vector<void *> so_handles;
 
-std::shared_ptr<Plugin> create_plugin(Session *session, const std::string &plugin_name, const json &plugin_config) {
-  std::string plugin_file = plugin_config.value<std::string>("path", "");
+std::shared_ptr<Plugin> create_plugin(const std::string &plugin_name, const json &plugin_info) {
+  std::string plugin_file = plugin_info.value<std::string>("path", "");
   std::string real_plugin_location = "./" + plugin_file;
   std::filesystem::path f(real_plugin_location);
   if (!std::filesystem::exists(f)) {
@@ -49,9 +49,9 @@ std::shared_ptr<Plugin> create_plugin(Session *session, const std::string &plugi
     return nullptr;
   }
 
-  Plugin *(*acq)(Session *, const json &);
-  acq = (Plugin *(*)(Session *, const json &))acquire_func;
-  Plugin *new_plugin = acq(session, plugin_config);
+  Plugin *(*acq)(const std::string &, const json &);
+  acq = (Plugin *(*)(const std::string &, const json &))acquire_func;
+  Plugin *new_plugin = acq(plugin_name, plugin_info.value<json>("config", json::object()));
   if (!new_plugin) {
     util::log(util::warning, "Unable to initialize plugin object");
     return nullptr;
@@ -67,10 +67,11 @@ std::shared_ptr<Plugin> create_plugin(Session *session, const std::string &plugi
 std::vector<std::shared_ptr<Plugin>> load_plugins(Session *session, const std::vector<std::pair<std::string, json>> &plugins){
   std::vector<std::shared_ptr<Plugin>> loaded_plugins;
   if (!plugins.size()) {
-    util::log(util::warning, "Not plugins enabled");
+    util::log(util::warning, "No plugins enabled");
+		exit(1);
   }
   for (auto p : plugins) {
-    auto new_plugin = create_plugin(session, p.first, p.second);
+    auto new_plugin = create_plugin(p.first, p.second);
     if (!new_plugin) {
       util::log(util::error, "Unable to create plugin for %s", p.first.c_str());
     } else {

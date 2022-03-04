@@ -3,8 +3,8 @@
 #include <iostream>
 #include <string>
 
-#include "../../include/json.hpp"
-#include "../../include/yaml.h"
+#include "json.hpp"
+#include "yaml.h"
 
 using nlohmann::json;
 
