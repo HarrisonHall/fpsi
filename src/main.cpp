@@ -10,6 +10,7 @@
 
 #include "fpsi.hpp"
 #include "session/session.hpp"
+#include "data/datahandler.hpp"
 #include "util/logging.hpp"
 #include "util/time.hpp"
 
@@ -47,8 +48,10 @@ int main(int argc, char **argv) {
 	std::stringstream startup_message;
   util::log(util::message, "FPSI Node: %s", fpsi::session->get_name().c_str());
 
+	util::log("agg_delay: %u", ::fpsi::session->data_handler->agg_delay_ms());
   while (!fpsi::session->exiting) {
-    util::active_sleep_since_last(250);  // .25 seconds
+		// TODO - active_sleep_since_last doesn't seem to be working correctly at high intervals
+    util::active_sleep_since_last(::fpsi::session->data_handler->agg_delay_ms());
     fpsi::session->aggregate_data();
   }
 

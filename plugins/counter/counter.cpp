@@ -18,7 +18,7 @@ class Counter : public Plugin {
 public:
   Counter(const std::string &plugin_name, const json &plugin_config) :
 		Plugin(plugin_name, plugin_config) {
-    log(util::debug, "Created counter");
+    util::log(util::debug, "Created counter");
 		void *s = &(::fpsi::session);
 		::fpsi::session->data_handler->create_data_source("counter");
     counter_thread = new std::thread(&Counter::count, this);

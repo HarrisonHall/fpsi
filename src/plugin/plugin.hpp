@@ -30,8 +30,7 @@ public:
   virtual void read_socket(const json &message) {}
   virtual void send_socket(const json &message) {}
 
-	const std::string name;
-
+	const std::string name;  
 };
 
 }

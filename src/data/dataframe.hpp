@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -17,15 +18,11 @@
 
 namespace fpsi {
 
-class Session;
-
 
 class DataFrame {
 public:
   DataFrame();
-  DataFrame(Session *session);
   DataFrame(uint64_t id, std::string source, std::string type, json data);
-  DataFrame(Session *session, uint64_t id, std::string source, std::string type, json data);
   DataFrame(const DataFrame &);
   ~DataFrame();
   json to_json();
@@ -45,14 +42,16 @@ public:
   json get_data();
   void set_data(json data);
 
+	void add_destructor_callback(const std::function<void(DataFrame *)> &callback);
+
 private:
   uint64_t id;
   std::string source;
   std::string type;  // raw, agg
   json data = json(json::value_t::object);
   std::string time;
-  Session *session = nullptr;
   std::mutex data_lock;
+	std::vector<std::function<void(DataFrame *)>> destructor_callbacks;
 };
 
 }  // namespace fpsi

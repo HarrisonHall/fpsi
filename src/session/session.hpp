@@ -29,8 +29,11 @@ public:
 
   std::string get_name();  // Get name of current fpsi node (from config)
 	std::shared_ptr<Plugin> get_plugin(const std::string &name);  // Get plugin by name
-
   std::vector<std::pair<std::string, json>> get_plugins(YAML::Node &);  // Parse plugin information from yaml
+	template<typename T>
+	T get_from_config(const std::string &key, T default_value) {
+		return this->raw_config.value<T>(key, default_value);
+	}
 
   void set_state(std::string, const json &);  // Set state in state-registry
   const json get_state(std::string);  // Get state from state-registry
@@ -43,6 +46,7 @@ public:
   std::thread *aggregate_thread = nullptr;
   std::thread *state_thread = nullptr;
   bool exiting = false;
+
   
 private:
   json raw_config;  // Parsed config file (converted from yaml)

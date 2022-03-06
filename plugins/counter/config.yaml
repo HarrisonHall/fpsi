@@ -3,6 +3,8 @@ name: "Counter Example"
 # DEBUG decides to print information
 DEBUG: true
 
+#aggregations_per_second: 4.0
+
 plugins:
   counter:
     path: "counter.so"

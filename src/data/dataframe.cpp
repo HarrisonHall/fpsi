@@ -6,13 +6,10 @@
 
 #include <string>
 
-#include "session/session.hpp"
-#include "util/time.hpp"
 #include "fpsi.hpp"
-
 #include "dataframe.hpp"
 #include "datahandler.hpp"
-
+#include "util/time.hpp"
 
 
 namespace fpsi{
@@ -32,10 +29,6 @@ DataFrame::DataFrame(const DataFrame &dataframe) {
   this->data = dataframe.data;
 }
 
-DataFrame::DataFrame(Session *session) : DataFrame() {
-  this->session = session;
-}
-
 DataFrame::DataFrame(
   uint64_t id, std::string source, std::string type, json data
 ) {
@@ -45,16 +38,21 @@ DataFrame::DataFrame(
   this->data = data;
 }
 
-DataFrame::DataFrame(
-  Session *session, uint64_t id, std::string source, std::string type, json data)
-  : DataFrame(id, source, type, data) {
-  this->session = session;
-}
-
 DataFrame::~DataFrame() {
-  util::log(util::debug, "DataFrame w/ id %d just updated in db", this->id);
+  util::log(util::debug, "DataFrame w/ id %d calling callbacks", this->id);
+	for (const auto &callback : this->destructor_callbacks) {
+		callback(this);
+	}
+	/*
   if (this->session)
     this->session->data_handler->update_data_frame(*this);
+	*/
+}
+
+void DataFrame::add_destructor_callback(const std::function<void(DataFrame *)> &callback) {
+	static std::mutex blocker;
+	const std::lock_guard<std::mutex> lock(blocker);
+	this->destructor_callbacks.push_back(callback);
 }
 
 json DataFrame::to_json() {

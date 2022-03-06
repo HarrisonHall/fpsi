@@ -23,7 +23,7 @@ extern std::vector<void *> so_handles;
 
 std::shared_ptr<Plugin> create_plugin(Session *session, const std::string &plugin_name, const json &plugin_config);
 
-std::vector<std::shared_ptr<Plugin>> load_plugins(Session *session, const std::vector<std::pair<std::string, json>> &plugins);
+std::vector<std::shared_ptr<Plugin>> load_plugins(const std::vector<std::pair<std::string, json>> &plugins);
 
 void aggregate_data_threads(Session *session, const std::vector<std::shared_ptr<Plugin>> &plugins);
 

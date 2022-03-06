@@ -64,7 +64,7 @@ std::shared_ptr<Plugin> create_plugin(const std::string &plugin_name, const json
   return std::shared_ptr<Plugin>(new_plugin);
 }
 
-std::vector<std::shared_ptr<Plugin>> load_plugins(Session *session, const std::vector<std::pair<std::string, json>> &plugins){
+std::vector<std::shared_ptr<Plugin>> load_plugins(const std::vector<std::pair<std::string, json>> &plugins){
   std::vector<std::shared_ptr<Plugin>> loaded_plugins;
   if (!plugins.size()) {
     util::log(util::warning, "No plugins enabled");

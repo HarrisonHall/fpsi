@@ -27,13 +27,15 @@ const size_t max_state_size = 10;
 
 namespace fpsi {
 
-Session::Session(int argc, char **argv) : data_handler(new DataHandler(this)) {
+Session::Session(int argc, char **argv) {
 	::fpsi::session = this;  // Session should be a global singleton
-  parse_cli(argc, argv);
+  this->parse_cli(argc, argv);
 	auto config_yaml = YAML::LoadFile(this->config_path);
 	raw_config = util::from_yaml(config_yaml);
 
-  this->plugins = load_plugins(this, this->get_plugins(config_yaml));
+	this->data_handler = std::make_shared<DataHandler>(
+		this->get_from_config<double>("aggregations_per_second", 4.0));
+  this->plugins = load_plugins(this->get_plugins(config_yaml));
 }
 
 void Session::parse_cli(int argc, char **argv) {
@@ -139,15 +141,17 @@ void Session::finish() {
 
   this->exiting = true;
 
-  util::log("Killing agg");
+  util::log(util::debug, "Killing agg");
   if (aggregate_thread)
     if (aggregate_thread->joinable())
       aggregate_thread->join();
 
-  util::log("Killing state");
+  util::log(util::debug, "Killing state");
   if (state_thread)
     if (state_thread->joinable())
       state_thread->join();
+
+	this->data_handler->close_data_sources();  // Dump data before killing plugins
 
   util::log("Finished");
 }
