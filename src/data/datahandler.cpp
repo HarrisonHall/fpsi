@@ -168,7 +168,6 @@ uint32_t DataHandler::agg_delay_ms() {
 	static uint32_t agg_delay = 0;
 	if (!agg_delay) {
 		agg_delay = static_cast<uint32_t>(1000.0 / this->agg_per_sec);
-		util::log("%d %f", agg_delay, this->agg_per_sec);
 	}
 	return agg_delay;
 }

@@ -63,74 +63,117 @@ public:
 		}
 
 		// Read intial data
-		std::string get_data =
-			"SELECT * FROM "
-			"(SELECT * FROM dataframes ORDER BY df_id DESC LIMIT " + std::to_string(max_recent_data) + " )"
-			"ORDER BY df_id ASC";
-		failed = sqlite3_prepare_v2(this->db, get_data.c_str(), get_data.size(), &statement, NULL);
-		row_cursor = sqlite3_step(statement);
-		while (row_cursor == SQLITE_ROW) {
-			size_t id = sqlite3_column_int(statement, 0);
-			std::string source(reinterpret_cast<const char*>(sqlite3_column_text(statement, 1)));
-			std::string type(reinterpret_cast<const char*>(sqlite3_column_text(statement, 2)));
-			const void *bson_data = sqlite3_column_blob(statement, 3);
-			int bson_len = sqlite3_column_bytes(statement, 3);
-			std::vector<std::uint8_t> v_bson(bson_len+1);
-			memcpy(v_bson.data(), bson_data, bson_len);
-			for (size_t i = 0; i < v_bson.size(); i++) {
-				std::cout << "START: " << (uint16_t)v_bson.data()[i] << std::endl;
-			}
-			util::log("%p %d", bson_data, bson_len);
-			json df_json = json::from_bson(v_bson);
-			std::string time(reinterpret_cast<const char*>(sqlite3_column_text(statement, 4)));
-
-			util::log(util::debug, "%s: %s: %s", source.c_str(), type.c_str(), time.c_str());
-
-			::fpsi::session->data_handler->create_data_source(source);
-
-			auto df = std::make_shared<DataFrame>(id, source, type, df_json);
-			//df->set_time(time);  // TODO
-
-			if (type == "raw") {
-				::fpsi::session->data_handler->create_raw(df);
-			} else if (type == "agg") {
-				::fpsi::session->data_handler->create_agg(df);
-			} else if (type == "state") {
-				::fpsi::session->data_handler->create_stt(df);
-			} else {
-				util::log(util::warning, "Invalid dataframe type:  %s", type.c_str());
-			}
-
+		for (const auto &packet_type : {"agg", "stt"}) {
+			std::vector<std::string> packet_sources;
+			std::string get_sources = "SELECT DISTINCT df_source FROM dataframes";
+			failed = sqlite3_prepare_v2(this->db, get_sources.c_str(), get_sources.size(), &statement, NULL);
 			row_cursor = sqlite3_step(statement);
+			while (row_cursor == SQLITE_ROW) {
+				packet_sources.push_back(
+					{reinterpret_cast<const char*>(sqlite3_column_text(statement, 0))});
+				row_cursor = sqlite3_step(statement);  // Advance
+			}
+			sqlite3_finalize(statement);
+
+			for (const auto &packet_source : packet_sources) {
+				std::string get_data =
+					"SELECT * FROM "
+					"(SELECT * FROM dataframes where df_source = ? AND df_type = ? "
+					"ORDER BY datetime(df_time) DESC LIMIT " + std::to_string(max_recent_data) + " )"
+					"ORDER BY df_id ASC";
+				failed = sqlite3_prepare_v2(this->db, get_data.c_str(), get_data.size(), &statement, NULL);
+				
+				// Bind vars
+				failed = sqlite3_bind_text(statement, 1, packet_source.c_str(), -1, SQLITE_TRANSIENT);
+				assert(("Failed to bind source", failed == SQLITE_OK));
+				failed = sqlite3_bind_text(statement, 2, packet_type, -1, SQLITE_TRANSIENT);
+				assert(("Failed to bind type", failed == SQLITE_OK));
+
+				// Iterate
+				row_cursor = sqlite3_step(statement);
+				while (row_cursor == SQLITE_ROW) {
+					// Read columns
+					size_t df_id = sqlite3_column_int(statement, 0);
+					std::string df_source(reinterpret_cast<const char*>(sqlite3_column_text(statement, 1)));
+					std::string df_type(reinterpret_cast<const char*>(sqlite3_column_text(statement, 2)));
+					const void *bson_data = sqlite3_column_blob(statement, 3);
+					int bson_len = sqlite3_column_bytes(statement, 3);
+					std::vector<std::uint8_t> v_bson(bson_len);
+					memcpy(v_bson.data(), bson_data, bson_len);
+					json df_json = json::from_bson(v_bson);
+					std::string df_time(reinterpret_cast<const char*>(sqlite3_column_text(statement, 4)));
+					
+					::fpsi::session->data_handler->create_data_source(df_source);  // Ensure source
+					
+					auto df = std::make_shared<DataFrame>(df_id, df_source, df_type, df_json);
+					df->set_time(df_time);  // Set correct time
+					
+					// TODO - only insert older packets if they fit within a recent timeframe
+					if (df_type == "raw") {
+						::fpsi::session->data_handler->create_raw(df);
+					} else if (df_type == "agg") {
+						::fpsi::session->data_handler->create_agg(df);
+					} else if (df_type == "state") {
+						::fpsi::session->data_handler->create_stt(df);
+					} else {
+						util::log(util::warning, "Invalid dataframe type: %s (id=%d)", df_type.c_str(), df_id);
+					}
+					
+					row_cursor = sqlite3_step(statement);  // Advance
+				}
+				sqlite3_finalize(statement);
+			}
+			
 		}
-		sqlite3_finalize(statement);
-		
   }
 
   ~SQLiteDB() {
 		if (this->db) {
 			util::log("Closing sqlitedb");
-			sqlite3_close(db);
+			sqlite3_close(db);  // Close database
 		}
   }
 
   void post_aggregate(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {
-		static auto update_in_db = [this](DataFrame *df) {
-			/*
-			util::log(util::debug, "Calling update callback");
-			if (this->db) {
-				int failed = sqlite3_exec(db, "INSERT INTO dataframes(df_source, df_type, df_data, df_time) VALUES(?, ?, ?, ?);", "test", "test1", NULL, "test2");
-				if (!failed) {
-				  df->set_id(sqlite3_last_insert_rowid(db));
-				} else {
-					util::log(util::warning, "Failed to enter df into db");
-				}
-			}
-			return;*/
+		this->update_packet(agg_data);
+  }
+
+	void post_state(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {
+		this->update_packet(agg_data);
+  }
+
+	void update_packet(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {
+				static auto update_in_db = [this](DataFrame *df) {
+			// Prepare update
+			std::string update_df =
+				"UPDATE dataframes SET df_source = ?, df_type = ?, df_data = ?, df_time = ? "
+				"WHERE df_id = ?";
+			sqlite3_stmt *statement;
+			int failed = sqlite3_prepare_v2(this->db, update_df.c_str(), update_df.size(), &statement, NULL);
+
+			// Bind vars
+			failed = sqlite3_bind_text(statement, 1, df->get_source().c_str(), -1, SQLITE_TRANSIENT);
+			assert(("Failed to bind source", failed == SQLITE_OK));
+			failed = sqlite3_bind_text(statement, 2, df->get_type().c_str(), -1, SQLITE_TRANSIENT);
+			assert(("Failed to bind text", failed == SQLITE_OK));
+			auto df_bson = df->get_bson();
+			failed = sqlite3_bind_blob(statement, 3, df_bson.data(), df_bson.size(), SQLITE_TRANSIENT);
+			assert(("Failed to bind blob", failed == SQLITE_OK));
+			failed = sqlite3_bind_text(statement, 4, df->get_time().c_str(), -1, SQLITE_TRANSIENT);
+			assert(("Failed to bind time", failed == SQLITE_OK));
+			failed = sqlite3_bind_int(statement, 5, df->get_id());
+			assert(("Failed to bind int", failed == SQLITE_OK));
+
+			// Exec
+			failed = sqlite3_step(statement);
+			assert(("sqlite insert is a single operation", failed = SQLITE_DONE));
+			sqlite3_finalize(statement);
+
+			util::log(util::debug, "Updated df %d in sqlite", df->get_id());
+			return;
 		};
-		
+
 		for (auto [source, df] : agg_data) {
-			util::log(util::debug, "Inserting");
 			// Insert into db
 			std::string insert_df =
 				"INSERT INTO dataframes(df_source, df_type, df_data, df_time) "
@@ -143,11 +186,7 @@ public:
 			assert(("Failed to bind source", failed == SQLITE_OK));
 			failed = sqlite3_bind_text(statement, 2, df->get_type().c_str(), -1, SQLITE_TRANSIENT);
 			assert(("Failed to bind text", failed == SQLITE_OK));
-			util::log("bson: %c %d", df->get_bson().data()[0],df->get_bson().size());
 			auto df_bson = df->get_bson();
-			for (size_t i = 0; i < df_bson.size(); i++) {
-				std::cout << "HERE: " << (uint16_t)df_bson.data()[i] << std::endl;
-			}
 			failed = sqlite3_bind_blob(statement, 3, df_bson.data(), df_bson.size(), SQLITE_TRANSIENT);
 			assert(("Failed to bind blob", failed == SQLITE_OK));
 			failed = sqlite3_bind_text(statement, 4, df->get_time().c_str(), -1, SQLITE_TRANSIENT);
@@ -164,7 +203,7 @@ public:
 			// Add callback to update on deletion
 			df->add_destructor_callback(update_in_db);
 		}
-  }
+	}
 
 private:
 	sqlite3 *db = nullptr;
