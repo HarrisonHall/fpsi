@@ -37,6 +37,7 @@ public:
 
   void set_state(std::string, const json &);  // Set state in state-registry
   const json get_state(std::string);  // Get state from state-registry
+	std::vector<std::string> get_state_keys();
 
   std::shared_ptr<DataHandler> data_handler;
 

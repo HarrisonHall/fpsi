@@ -157,6 +157,13 @@ std::vector<std::shared_ptr<DataFrame>> DataHandler::get_recent_data(const std::
   return data;
 }
 
+std::shared_ptr<DataSource> DataHandler::get_source(const std::string &source) {
+	if (this->data_sources.find(source) != this->data_sources.end()) {
+		return this->data_sources[source];
+	}
+	return nullptr;
+}
+
 std::vector<std::string> DataHandler::get_sources() {
   std::vector<std::string> sources;
   for (auto [ds_name, ds] : data_sources)

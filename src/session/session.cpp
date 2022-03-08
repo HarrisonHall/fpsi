@@ -109,6 +109,16 @@ std::vector<std::pair<std::string, json>> Session::get_plugins(YAML::Node &confi
   return plugins;
 }
 
+std::vector<std::string> Session::get_state_keys() {
+	std::vector<std::string> keys;
+
+	for (const auto &key_state : this->states) {
+		keys.push_back(key_state.first);
+	}
+	
+	return keys;
+}
+
 const json Session::get_state(std::string key) {
   if (this->states.find(key) != this->states.end())
     return this->states[key];

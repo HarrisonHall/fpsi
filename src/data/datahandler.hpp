@@ -31,9 +31,11 @@ public:
   std::shared_ptr<DataFrame> create_stt(const std::string &source, const json &data);
   std::shared_ptr<DataFrame> create_stt(std::shared_ptr<DataFrame> df);
   bool update_data_frame(const DataFrame &df);
+	std::shared_ptr<DataSource> get_source(const std::string &source);
   std::vector<std::shared_ptr<DataFrame>> get_recent_data(const std::string &source);
   std::shared_ptr<DataFrame> get_newest_agg(const std::string &source);
   std::vector<std::string> get_sources();
+	
 
 	uint32_t agg_delay_ms();
 

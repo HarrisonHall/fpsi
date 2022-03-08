@@ -21,14 +21,12 @@ public:
   virtual void post_aggregate(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {}
   virtual void pre_state_change(const std::string &key, const json &last, const json &next) {}
   virtual void post_state_change(const std::string &key, const json &last, const json &next) {}
+	
   virtual void send_data(std::vector<DataFrame *> &d) {}
   std::vector<DataFrame *> read_data() {
     std::vector<DataFrame *> d;
     return d;
   }
-  virtual void *get_gui() { return nullptr; }
-  virtual void read_socket(const json &message) {}
-  virtual void send_socket(const json &message) {}
 
 	const std::string name;  
 };
