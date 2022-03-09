@@ -1,26 +1,25 @@
 // imgui-gui.cpp
 
-#include "fpsi/src/plugin/plugin.hpp"
+//// For reference:
+//// https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
+//// Very helpful for checking how widgets are used
 
 #include <cassert>
 #include <cstring>
+#include <deque>
 #include <iostream>
 #include <unistd.h>
 #include <cstdio>
 #include <string>
 #include <thread>
 
-#include <GLFW/glfw3.h> // Will drag system OpenGL headers
+#include "imgui-gui.hpp"
 
-#include "fpsi/src/session/session.hpp"
-#include "fpsi/src/data/datahandler.hpp"
-#include "fpsi/src/data/dataframe.hpp"
-#include "fpsi/src/data/datasource.hpp"
-#include "fpsi/src/util/logging.hpp"
-
-#include "imgui.h"
-#include "imgui_impl_opengl3.h"
-#include "imgui_impl_glfw.h"
+#include "data/datahandler.hpp"
+#include "data/dataframe.hpp"
+#include "data/datasource.hpp"
+#include "session/session.hpp"
+#include "util/logging.hpp"
 
 
 
@@ -82,186 +81,220 @@ GLFWwindow* setup_imgui() {
 
 namespace fpsi {
 
-class ImGuiGUI : public Plugin {
-public:
-  ImGuiGUI(const std::string &plugin_name, const json &plugin_config) :
-		Plugin(plugin_name, plugin_config) {
-    log(util::debug, "Creating imgui GUI");
+ImGuiGUI::ImGuiGUI(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config) :
+	Plugin(plugin_name, plugin_path, plugin_config) {
+	log(util::debug, "Creating imgui GUI");
 		
-		this->gui_thread = new std::thread(&ImGuiGUI::event_loop, this);
-  }
-
-  ~ImGuiGUI() {
-		if (this->gui_thread != nullptr)
-			if (this->gui_thread->joinable())
-				this->gui_thread->join();
-		
-		if (window != nullptr) {
-			this->cleanup_window();
-		}
-  }
-
-  void post_aggregate(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {}
-
-	void post_state(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {}
-
-	void event_loop() {
-		// The window must be set up in the event loop since opengl contexts are
-		// thread-local
-		this->window = setup_imgui();
-
-		if (this->window == nullptr) {
-			util::log(util::error, "Window is null");
-			return;
-		}
-		bool show_another_window = false;
-		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-		
-		while (!glfwWindowShouldClose(window) && !::fpsi::session->exiting) {
-			// Poll and handle events (inputs, window resize, etc.)
-			glfwPollEvents();
-			
-			// Start the Dear ImGui frame
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
-			
-			// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-			{
-				static float f = 0.0f;
-				static int counter = 0;
-
-				ImGui::Begin("FPSI Settings");  // Set window title
-				
-				ImGui::Text("Debug Text: %s.", "fpsi");
-
-				if (ImGui::Button("Shutdown"))
-					::fpsi::session->finish();
-				
-				ImGui::Checkbox("Another Window", &show_another_window);
-				
-				ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-				ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-				
-				if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-					counter++;
-				ImGui::SameLine();
-				ImGui::Text("counter = %d", counter);
-				
-				ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-				ImGui::End();
-			}
-			
-			// 3. Show another simple window.
-			if (show_another_window) {
-				ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-				ImGui::Text("Hello from another window!");
-				if (ImGui::Button("Close Me"))
-					show_another_window = false;
-				ImGui::End();
-			}
-
-			// Create data table
-			{
-				ImGui::Begin("DataHandler");  // Set window title
-
-				// Tabs
-				if (ImGui::BeginTabBar("tabs")) {
-					if (ImGui::BeginTabItem("Aggregated")) {
-						static ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-						static float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
-						static ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * 11);
-						if (ImGui::BeginTable("table_scrollx", 5, flags, outer_size)) {
-							//ImGui::TableSetupScrollFreeze(freeze_cols, freeze_rows);
-							ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_NoHide); // Make the first column not hideable to match our use of TableSetupScrollFreeze()
-							ImGui::TableSetupColumn("Source");
-							ImGui::TableSetupColumn("Type");
-							ImGui::TableSetupColumn("Data");
-							ImGui::TableSetupColumn("Time");
-							ImGui::TableHeadersRow();
-							for (const auto &source_name : ::fpsi::session->data_handler->get_sources()) {
-								auto data_source = ::fpsi::session->data_handler->get_source(source_name);
-								for (const auto &df : data_source->agg_data) {
-									ImGui::TableNextRow();
-									ImGui::TableSetColumnIndex(0);
-									ImGui::Text("%ld", df->get_id());
-									ImGui::TableSetColumnIndex(1);
-									ImGui::Text("%s", df->get_source().c_str());
-									ImGui::TableSetColumnIndex(2);
-									ImGui::Text("%s", df->get_type().c_str());
-									ImGui::TableSetColumnIndex(3);
-									ImGui::Text("%s", df->get_data().dump().c_str());
-									ImGui::TableSetColumnIndex(4);
-									ImGui::Text("%s", df->get_time().c_str());
-								}
-							}
-							ImGui::EndTable();
-						}
-						ImGui::EndTabItem();
-					}
-					if (ImGui::BeginTabItem("State")) {
-						//ImGui::Text("This is the state tabe");
-						static ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-						static float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
-						static ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * 8);
-						if (ImGui::BeginTable("table_scrollx2", 2, flags, outer_size)) {
-							ImGui::TableSetupColumn("State");
-							ImGui::TableSetupColumn("Value");
-							//ImGui::TableSetupColumn("Time");
-							ImGui::TableHeadersRow();
-							for (const auto &key : ::fpsi::session->get_state_keys()) {
-								auto value = ::fpsi::session->get_state(key);
-
-								ImGui::TableNextRow();
-								ImGui::TableSetColumnIndex(0);
-								ImGui::Text("%s", key.c_str());
-								ImGui::TableSetColumnIndex(1);
-								ImGui::Text("%s", value.dump().c_str());
-							}
-							ImGui::EndTable();
-						}
-						ImGui::EndTabItem();
-					}
-					ImGui::EndTabBar();
-				}
-				ImGui::End();
-			}
-			
-			// Rendering
-			ImGui::Render();
-			int display_w, display_h;
-			glfwGetFramebufferSize(window, &display_w, &display_h);
-			glViewport(0, 0, display_w, display_h);
-			glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-			glClear(GL_COLOR_BUFFER_BIT);
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-			glfwSwapBuffers(window);
-			
-    }
-		this->cleanup_window();
-		::fpsi::session->finish();  // Close app if window closes
-	}
-
-	void cleanup_window() {
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
-		
-		glfwDestroyWindow(window);
-		glfwTerminate();
-
-		this->window = nullptr;
-	}
-
-private:
-  GLFWwindow *window = nullptr;
-	std::thread *gui_thread = nullptr;
-	
-};
-
+	this->gui_thread = new std::thread(&ImGuiGUI::event_loop, this);
 }
 
-extern "C" fpsi::Plugin *construct_plugin(const std::string &plugin_name, const json &plugin_config) {
-  return new fpsi::ImGuiGUI(plugin_name, plugin_config);
+ImGuiGUI::~ImGuiGUI() {
+	if (this->gui_thread != nullptr)
+		if (this->gui_thread->joinable())
+			this->gui_thread->join();
+		
+	if (window != nullptr) {
+		this->cleanup_window();
+	}
+}
+
+void ImGuiGUI::event_loop() {
+	// The window must be set up in the event loop since opengl contexts are
+	// thread-local
+	this->window = setup_imgui();
+
+	if (this->window == nullptr) {
+		util::log(util::error, "Window is null");
+		return;
+	}
+
+	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+		
+	while (!glfwWindowShouldClose(window) && !::fpsi::session->exiting) {
+		// Start the Dear ImGui frame
+		glfwPollEvents();  // Poll and handle events (inputs, window resize, etc.)
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		// Create appropriate windows
+		this->session_window_event();  // Create session window
+		this->data_window_event();  // Create data window
+		this->state_window_event();  // Create state window
+		this->about_window();
+			
+		// Finish rendering
+		ImGui::Render();
+		int display_w, display_h;
+		glfwGetFramebufferSize(window, &display_w, &display_h);
+		glViewport(0, 0, display_w, display_h);
+		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+		glClear(GL_COLOR_BUFFER_BIT);
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		glfwSwapBuffers(window);
+			
+	}
+	this->cleanup_window();
+	::fpsi::session->finish();  // Close app if window closes
+}
+
+void ImGuiGUI::cleanup_window() {
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+		
+	glfwDestroyWindow(window);
+	glfwTerminate();
+
+	this->window = nullptr;
+}
+
+void ImGuiGUI::session_window_event() {
+	ImGui::Begin("Session");  // Set window title
+
+	// Config TODO
+	
+	// Plugin helper
+	auto loaded_plugins = ::fpsi::session->get_loaded_plugins();
+	if (ImGui::TreeNode("Plugins")) {
+		for (auto plugin : loaded_plugins) {
+			if (ImGui::TreeNode(plugin->name.c_str())) {
+				bool unload_is_disabled = (plugin.get() == this);
+				ImGui::Text("%s", plugin->path.c_str());
+				ImGui::SameLine();
+				if (unload_is_disabled) ImGui::BeginDisabled();
+				if (ImGui::Button("unload")) {
+					::fpsi::session->unload_plugin(plugin->name);
+				}
+				if (unload_is_disabled) ImGui::EndDisabled();
+				ImGui::TreePop();
+			}
+		}
+			
+		ImGui::TreePop();
+	}
+
+	// About menu
+	if (ImGui::Button("About"))
+		this->show_about_window ^= true;
+
+	// Quit button
+	if (ImGui::Button("Quit"))
+		::fpsi::session->finish();
+		
+	// default
+	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		
+	ImGui::End();
+}
+
+void ImGuiGUI::data_window_event() {
+	ImGui::Begin("DataHandler");  // Set window title
+		
+	// Tabs
+	if (ImGui::BeginTabBar("tabs")) {
+		std::vector<std::pair<std::string, std::function<std::deque<std::shared_ptr<DataFrame>>(std::shared_ptr<DataSource>)>>>
+			data_types = {
+			{
+				"Aggregated",
+				[](std::shared_ptr<DataSource> d) {
+					return d->agg_data;
+				}
+			},
+			{
+				"Raw",
+				[](std::shared_ptr<DataSource> d) {
+					return d->raw_data;
+				}
+			}
+		};
+		for (auto [tab_name, df_from_source] : data_types) {
+			if (ImGui::BeginTabItem(tab_name.c_str())) {
+				static ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+				static float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
+				static ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * 11);
+				if (ImGui::BeginTable("table_scrollx", 5, flags, outer_size)) {
+					//ImGui::TableSetupScrollFreeze(freeze_cols, freeze_rows);
+					ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_NoHide); // Make the first column not hideable to match our use of TableSetupScrollFreeze()
+					ImGui::TableSetupColumn("Source");
+					ImGui::TableSetupColumn("Type");
+					ImGui::TableSetupColumn("Data");
+					ImGui::TableSetupColumn("Time");
+					ImGui::TableHeadersRow();
+					for (const auto &source_name : ::fpsi::session->data_handler->get_sources()) {
+						auto data_source = ::fpsi::session->data_handler->get_source(source_name);
+						for (const auto &df : df_from_source(data_source)) {
+							ImGui::TableNextRow();
+							ImGui::TableSetColumnIndex(0);
+							ImGui::Text("%ld", df->get_id());
+							ImGui::TableSetColumnIndex(1);
+							ImGui::Text("%s", df->get_source().c_str());
+							ImGui::TableSetColumnIndex(2);
+							ImGui::Text("%s", df->get_type().c_str());
+							ImGui::TableSetColumnIndex(3);
+							ImGui::Text("%s", df->get_data().dump().c_str());
+							ImGui::TableSetColumnIndex(4);
+							ImGui::Text("%s", df->get_time().c_str());
+						}
+					}
+					ImGui::EndTable();
+				}
+				ImGui::EndTabItem();
+			}
+		}
+		
+		ImGui::EndTabBar();
+	}
+	ImGui::End();
+}
+
+void ImGuiGUI::state_window_event() {
+	ImGui::Begin("States");  // Set window title
+
+	// State creator
+	
+
+	// State table
+	static ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+	static float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
+	static ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * 8);
+	if (ImGui::BeginTable("table_scrollx2", 2, flags, outer_size)) {
+		ImGui::TableSetupColumn("State");
+		ImGui::TableSetupColumn("Value");
+		//ImGui::TableSetupColumn("Time");
+		ImGui::TableHeadersRow();
+		for (const auto &key : ::fpsi::session->get_state_keys()) {
+			auto value = ::fpsi::session->get_state(key);
+			
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("%s", key.c_str());
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("%s", value.dump().c_str());
+		}
+		ImGui::EndTable();
+	}
+	ImGui::End();
+}
+
+void ImGuiGUI::about_window() {
+	util::log(util::error, "show_about: %d", this->show_about_window);
+	if (!this->show_about_window) return;
+	
+	ImGui::Begin("About");
+
+	ImGui::Text("FPSI");
+	ImGui::Text("Data and state control software with dynamic plugin support for use with single or multi-node systems.");
+	ImGui::Text("Version: %s", ::fpsi::version.c_str());
+	ImGui::Text("Created by %s", ::fpsi::author.c_str());
+	ImGui::Text("%s", ::fpsi::url.c_str());
+	ImGui::Text("Under %s license", ::fpsi::license.c_str());
+
+	ImGui::End();
+}
+
+}  // namespace fpsi
+
+extern "C" fpsi::Plugin *construct_plugin(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config) {
+  return new fpsi::ImGuiGUI(plugin_name, plugin_path, plugin_config);
 }

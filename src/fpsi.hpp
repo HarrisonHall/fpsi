@@ -13,6 +13,11 @@ using json = nlohmann::json;
 
 namespace fpsi {
 
+const std::string version = "0.2";
+const std::string author = "Harrison Hall";
+const std::string url = "https://github.com/HarrisonHall/fpsi";
+const std::string license = "MIT";
+
 class Session;
 extern Session *session;  // Global session pointer
 

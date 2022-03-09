@@ -49,9 +49,9 @@ std::shared_ptr<Plugin> create_plugin(const std::string &plugin_name, const json
     return nullptr;
   }
 
-  Plugin *(*acq)(const std::string &, const json &);
-  acq = (Plugin *(*)(const std::string &, const json &))acquire_func;
-  Plugin *new_plugin = acq(plugin_name, plugin_info.value<json>("config", json::object()));
+  Plugin *(*acq)(const std::string &, const std::string &, const json &);
+  acq = (Plugin *(*)(const std::string &, const std::string &, const json &))acquire_func;
+  Plugin *new_plugin = acq(plugin_name, real_plugin_location, plugin_info.value<json>("config", json::object()));
   if (!new_plugin) {
     util::log(util::warning, "Unable to initialize plugin object");
     return nullptr;

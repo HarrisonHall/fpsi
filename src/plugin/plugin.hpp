@@ -14,7 +14,8 @@ namespace fpsi {
   
 class Plugin {
 public:
-  Plugin(std::string plugin_name, const json &plugin_config) : name(plugin_name) {}
+  Plugin(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config)
+		: name(plugin_name), path(plugin_path) {}
   virtual ~Plugin() {}
 
   virtual void pre_aggregate(const std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> &raw_data) {}
@@ -28,10 +29,13 @@ public:
     return d;
   }
 
-	const std::string name;  
+	const std::string name;
+	const std::string path;
 };
 
 }
 
 // Provide this function so that fpsi can acquire the plugin
-extern "C" fpsi::Plugin *construct_plugin(const std::string &plugin_name, const json &plugin_config);
+extern "C" fpsi::Plugin *construct_plugin(const std::string &plugin_name,
+																					const std::string &plugin_path,
+																					const json &plugin_config);

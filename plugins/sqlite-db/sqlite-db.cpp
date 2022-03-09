@@ -21,8 +21,8 @@ namespace fpsi {
 
 class SQLiteDB : public Plugin {
 public:
-  SQLiteDB(const std::string &plugin_name, const json &plugin_config) :
-		Plugin(plugin_name, plugin_config) {
+  SQLiteDB(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config) :
+		Plugin(plugin_name, plugin_path, plugin_config) {
     log(util::debug, "Creating sqlite-db");
 
 		// Read config
@@ -143,7 +143,9 @@ public:
   }
 
 	void update_packet(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {
-				static auto update_in_db = [this](DataFrame *df) {
+		const std::string sqlite_name = this->name;
+		static auto update_in_db = [this, sqlite_name](DataFrame *df) {
+			if (!::fpsi::session->get_plugin(sqlite_name)) return;  // sqlite has been unloaded
 			// Prepare update
 			std::string update_df =
 				"UPDATE dataframes SET df_source = ?, df_type = ?, df_data = ?, df_time = ? "
@@ -212,6 +214,6 @@ private:
 
 }
 
-extern "C" fpsi::Plugin *construct_plugin(const std::string &plugin_name, const json &plugin_config) {
-  return new fpsi::SQLiteDB(plugin_name, plugin_config);
+extern "C" fpsi::Plugin *construct_plugin(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config) {
+  return new fpsi::SQLiteDB(plugin_name, plugin_path, plugin_config);
 }

@@ -16,8 +16,8 @@ namespace fpsi {
 
 class Counter : public Plugin {
 public:
-  Counter(const std::string &plugin_name, const json &plugin_config) :
-		Plugin(plugin_name, plugin_config) {
+  Counter(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config) :
+		Plugin(plugin_name, plugin_path, plugin_config) {
     util::log(util::debug, "Created counter");
 		void *s = &(::fpsi::session);
 		::fpsi::session->data_handler->create_data_source("counter");
@@ -87,6 +87,6 @@ private:
 
 }
 
-extern "C" fpsi::Plugin *construct_plugin(const std::string &plugin_name, const json &plugin_config) {
-  return new fpsi::Counter(plugin_name, plugin_config);
+extern "C" fpsi::Plugin *construct_plugin(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config) {
+  return new fpsi::Counter(plugin_name, plugin_path, plugin_config);
 }

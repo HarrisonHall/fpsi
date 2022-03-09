@@ -90,6 +90,7 @@ std::string Session::get_name() {
 }
 
 std::shared_ptr<Plugin> Session::get_plugin(const std::string &name) {
+	std::lock_guard<std::mutex> plock(this->plugin_lock);
 	for (const auto &plugin : this->plugins) {
 		if (plugin->name == name) {
 			return plugin;
@@ -142,6 +143,37 @@ void Session::set_state(std::string key, const json &new_value) {
   // Write state to DB
   this->data_handler->create_stt(key, new_value);
 }
+
+bool Session::load_plugin() {
+	std::lock_guard<std::mutex> plock(this->plugin_lock);
+	// TODO
+	return false;
+}
+
+bool Session::unload_plugin(const std::string &name) {
+	std::lock_guard<std::mutex> plock(this->plugin_lock);
+	// Find plugin
+	std::shared_ptr<Plugin> found_plugin = nullptr;
+	for (const auto &plugin : this->plugins) {
+		if (plugin->name == name) {
+			found_plugin = plugin;
+			break;
+		}
+	}
+	if (!found_plugin) return false;
+	
+	// Get rid of plugin (or rather, stop tracking it)
+	this->plugins.erase(std::find(this->plugins.begin(), this->plugins.end(), found_plugin));
+	// Plugin should naturally deconstruct after this return and every other
+	// plugin referencing it also dies
+	return true;
+}
+
+std::vector<std::shared_ptr<Plugin>> Session::get_loaded_plugins() {
+	std::lock_guard<std::mutex> plock(this->plugin_lock);
+	return this->plugins;
+}
+
 
 /*
   Close threads.
