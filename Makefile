@@ -36,7 +36,7 @@ debug: src/main.cpp $(OBJECTS)
 
 release: src/main.cpp $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $(OPT) $(LIBS) $(OBJECTS) $(RELEASE_FLAGS) src/main.cpp include/yaml-cpp/build/libyaml-cpp.a -o fpsi
-	strip fpsi
+	#strip fpsi
 
 clean:
 	rm -f *.o

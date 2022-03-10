@@ -90,7 +90,7 @@ std::string Session::get_name() {
 }
 
 std::shared_ptr<Plugin> Session::get_plugin(const std::string &name) {
-	std::lock_guard<std::mutex> plock(this->plugin_lock);
+	const std::lock_guard<std::mutex> plock(this->plugin_lock);
 	for (const auto &plugin : this->plugins) {
 		if (plugin->name == name) {
 			return plugin;
@@ -145,13 +145,13 @@ void Session::set_state(std::string key, const json &new_value) {
 }
 
 bool Session::load_plugin() {
-	std::lock_guard<std::mutex> plock(this->plugin_lock);
+	const std::lock_guard<std::mutex> plock(this->plugin_lock);
 	// TODO
 	return false;
 }
 
 bool Session::unload_plugin(const std::string &name) {
-	std::lock_guard<std::mutex> plock(this->plugin_lock);
+	const std::lock_guard<std::mutex> plock(this->plugin_lock);
 	// Find plugin
 	std::shared_ptr<Plugin> found_plugin = nullptr;
 	for (const auto &plugin : this->plugins) {
@@ -170,7 +170,7 @@ bool Session::unload_plugin(const std::string &name) {
 }
 
 std::vector<std::shared_ptr<Plugin>> Session::get_loaded_plugins() {
-	std::lock_guard<std::mutex> plock(this->plugin_lock);
+	const std::lock_guard<std::mutex> plock(this->plugin_lock);
 	return this->plugins;
 }
 

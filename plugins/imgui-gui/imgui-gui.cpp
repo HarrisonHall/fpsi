@@ -75,6 +75,54 @@ GLFWwindow* setup_imgui() {
 	// Setup Platform/Renderer backends
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init(glsl_version);
+
+	// Theming
+	ImGuiStyle& style = ImGui::GetStyle();
+	//static ImVec4 nord_bg_color1 = ImVec4(0.18f, 0.20f, 0.25f, 1.00f);
+	static ImVec4 nord_bg_color2 = ImVec4(0.23f, 0.26f, 0.32f, 1.00f);
+
+	static ImVec4 nord_dark1 = ImVec4(0.18f, 0.20f, 0.25f, 1.00f);
+	static ImVec4 nord_dark2 = ImVec4(0.23f, 0.26f, 0.32f, 1.00f);
+	static ImVec4 nord_dark3 = ImVec4(0.26f, 0.30f, 0.37f, 1.00f);
+	static ImVec4 nord_dark4 = ImVec4(0.30f, 0.34f, 0.42f, 1.00f);
+
+	static ImVec4 nord_white = ImVec4(0.85f, 0.87f, 0.91f, 1.00f);
+
+	static ImVec4 nord_blue1 = ImVec4(0.56f, 0.74f, 0.73f, 1.00f);
+	static ImVec4 nord_blue2 = ImVec4(0.53f, 0.75f, 0.82f, 1.00f);
+	static ImVec4 nord_blue3 = ImVec4(0.51f, 0.63f, 0.76f, 1.00f);
+	static ImVec4 nord_blue4 = ImVec4(0.37f, 0.51f, 0.67f, 1.00f);
+
+	static ImVec4 nord_red = ImVec4(0.75f, 0.38f, 0.42f, 1.00f);
+	static ImVec4 nord_orange = ImVec4(0.82f, 0.53f, 0.44f, 1.00f);
+	static ImVec4 nord_yellow = ImVec4(0.92f, 0.80f, 0.55f, 1.00f);
+	static ImVec4 nord_green = ImVec4(0.64f, 0.75f, 0.55f, 1.00f);
+	static ImVec4 nord_purple = ImVec4(0.71f, 0.56f, 0.68f, 1.00f);
+
+	style.Colors[ImGuiCol_Button]                = ImVec4(0.48f, 0.72f, 0.89f, 0.49f);
+	style.Colors[ImGuiCol_ButtonHovered]         = ImVec4(0.50f, 0.69f, 0.99f, 0.68f);
+	style.Colors[ImGuiCol_ButtonActive]          = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
+	
+	
+	style.Colors[ImGuiCol_WindowBg] = nord_bg_color2;  // Window backgrounds
+	style.Colors[ImGuiCol_Tab] = nord_blue4;
+	style.Colors[ImGuiCol_TabHovered] = nord_blue3;
+	style.Colors[ImGuiCol_TabActive] = nord_blue3;
+	//style.Colors[ImGuiCol_HeaderHovered] = toolbar_color_active;  // ?
+	//style.Colors[ImGuiCol_HeaderActive] = toolbar_color_active;  // ?
+	style.Colors[ImGuiCol_TitleBg] = nord_blue4;
+	style.Colors[ImGuiCol_TitleBgCollapsed] = nord_blue4;
+	style.Colors[ImGuiCol_TitleBgActive] = nord_blue3;
+	//style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.01f, 0.01f, 0.02f, 0.80f);
+
+	// Table
+	style.Colors[ImGuiCol_TableHeaderBg] = nord_dark1;
+	//style.Colors[ImGuiCol_TitleBgCollapsed] = nord_blue4;
+	//style.Colors[ImGuiCol_TitleBgActive] = nord_blue3;
+
+	// Text
+	style.Colors[ImGuiCol_Text] = nord_white;
+	
 	return window;
 }
 
@@ -108,7 +156,9 @@ void ImGuiGUI::event_loop() {
 		return;
 	}
 
-	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	static ImVec4 background_color = ImVec4(0.18f, 0.20f, 0.25f, 1.00f);
+	static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	clear_color = background_color;
 		
 	while (!glfwWindowShouldClose(window) && !::fpsi::session->exiting) {
 		// Start the Dear ImGui frame
@@ -190,6 +240,8 @@ void ImGuiGUI::session_window_event() {
 
 void ImGuiGUI::data_window_event() {
 	ImGui::Begin("DataHandler");  // Set window title
+
+	static const uint16_t datatable_height = 40 + 1;
 		
 	// Tabs
 	if (ImGui::BeginTabBar("tabs")) {
@@ -198,13 +250,13 @@ void ImGuiGUI::data_window_event() {
 			{
 				"Aggregated",
 				[](std::shared_ptr<DataSource> d) {
-					return d->agg_data;
+					return d->get_agg_data();
 				}
 			},
 			{
 				"Raw",
 				[](std::shared_ptr<DataSource> d) {
-					return d->raw_data;
+					return d->get_raw_data();
 				}
 			}
 		};
@@ -212,7 +264,7 @@ void ImGuiGUI::data_window_event() {
 			if (ImGui::BeginTabItem(tab_name.c_str())) {
 				static ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
 				static float TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
-				static ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * 11);
+				static ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * datatable_height);
 				if (ImGui::BeginTable("table_scrollx", 5, flags, outer_size)) {
 					//ImGui::TableSetupScrollFreeze(freeze_cols, freeze_rows);
 					ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_NoHide); // Make the first column not hideable to match our use of TableSetupScrollFreeze()
@@ -223,7 +275,8 @@ void ImGuiGUI::data_window_event() {
 					ImGui::TableHeadersRow();
 					for (const auto &source_name : ::fpsi::session->data_handler->get_sources()) {
 						auto data_source = ::fpsi::session->data_handler->get_source(source_name);
-						for (const auto &df : df_from_source(data_source)) {
+						auto dataframes = df_from_source(data_source);
+						for (auto df : dataframes) {  // const & crash?
 							ImGui::TableNextRow();
 							ImGui::TableSetColumnIndex(0);
 							ImGui::Text("%ld", df->get_id());
@@ -278,7 +331,6 @@ void ImGuiGUI::state_window_event() {
 }
 
 void ImGuiGUI::about_window() {
-	util::log(util::error, "show_about: %d", this->show_about_window);
 	if (!this->show_about_window) return;
 	
 	ImGui::Begin("About");

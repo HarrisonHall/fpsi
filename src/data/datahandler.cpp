@@ -25,8 +25,7 @@ DataHandler::~DataHandler() {}
 bool DataHandler::create_data_source(const std::string &name) {
 	if (this->closed) return false;
   if (this->data_sources.find(name) != this->data_sources.end()) return false;
-  std::shared_ptr<DataSource> ds(new DataSource(name));
-  this->data_sources[name] = ds;
+  this->data_sources[name] = std::make_shared<DataSource>(name);
   return true;
 }
 
@@ -47,13 +46,8 @@ std::shared_ptr<DataFrame> DataHandler::create_raw(const std::string &source, co
   );
   df->set_time(util::to_time_str(util::timestamp()));
   //df->set_id(this->db.insert(*df.get()));  // push into db  // TODO - hook?
-  this->data_sources[source]->raw_data.push_back(df);  // track it
+  this->data_sources[source]->track_raw(df);  // track it
   util::log("Created raw with id %d", df->get_id());
-
-  // Get rid of old packets
-  while (this->data_sources[source]->raw_data.size() > this->MAX_DATA_IN_MEMORY) {
-    this->data_sources[source]->raw_data.pop_front();
-  }
 
   return df;
 }
@@ -64,7 +58,7 @@ std::shared_ptr<DataFrame> DataHandler::create_raw(std::shared_ptr<DataFrame> df
     return std::shared_ptr<DataFrame>(nullptr);
 
   df->set_type("raw");
-  this->data_sources[df->get_source()]->raw_data.push_back(df);
+	this->data_sources[df->get_source()]->track_raw(df);  // track it
   return df;
 }
 
@@ -78,13 +72,7 @@ std::shared_ptr<DataFrame> DataHandler::create_agg(const std::string &source, co
     -1, source, "agg", data
   );
   df->set_time(util::to_time_str(util::timestamp()));
-  //df->set_id(this->db.insert(*df.get()));  // push into db - TODO - hook?
-  this->data_sources[source]->agg_data.push_back(df);  // track it
-
-  // Get rid of old packets
-  while (this->data_sources[source]->agg_data.size() > this->MAX_DATA_IN_MEMORY) {
-    this->data_sources[source]->agg_data.pop_front();
-  }
+	this->data_sources[source]->track_agg(df);  // Track it
 
   return df;
 }
@@ -94,7 +82,7 @@ std::shared_ptr<DataFrame> DataHandler::create_agg(std::shared_ptr<DataFrame> df
     return std::shared_ptr<DataFrame>(nullptr);
 
   df->set_type("agg");
-  this->data_sources[df->get_source()]->raw_data.push_back(df);
+	this->data_sources[df->get_source()]->track_agg(df);  // Track it
   return df;
 }
 
@@ -114,7 +102,7 @@ std::shared_ptr<DataFrame> DataHandler::create_stt(std::shared_ptr<DataFrame> df
     return std::shared_ptr<DataFrame>(nullptr);
 
   df->set_type("stt");
-  this->data_sources[df->get_source()]->raw_data.push_back(df);
+  //this->data_sources[df->get_source()]->raw_data.push_back(df);  // TODO
   return df;
 }
 
@@ -122,7 +110,8 @@ std::shared_ptr<DataFrame> DataHandler::get_newest_agg(const std::string &source
 	if (this->closed) return nullptr;
   if (this->data_sources.find(source) != this->data_sources.end()) {
     auto ds = this->data_sources[source];
-    if (ds->agg_data.size() > 0) return ds->agg_data[ds->agg_data.size() - 1];
+    //if (ds->agg_data.size() > 0) return ds->agg_data[ds->agg_data.size() - 1];
+		return ds->get_agg_data().back();
   }
   return std::shared_ptr<DataFrame>(nullptr);
 }
@@ -138,16 +127,17 @@ std::vector<std::shared_ptr<DataFrame>> DataHandler::get_recent_data(const std::
   if (this->data_sources.find(source) == this->data_sources.end()) return data;
   auto ds = this->data_sources[source];
   if (!ds->last_raw) {
-    for (auto df : ds->raw_data) data.push_back(df);
+    for (auto df : ds->get_raw_data()) data.push_back(df);
   } else {
-    auto next_good_df = std::find(ds->raw_data.begin(), ds->raw_data.end(), ds->last_raw)++;
-    if (next_good_df != ds->raw_data.end()) {
-      while (next_good_df != ds->raw_data.end()) {
+		auto raw_data = ds->get_raw_data();
+    auto next_good_df = std::find(raw_data.begin(), raw_data.end(), ds->last_raw)++;
+    if (next_good_df != raw_data.end()) {
+      while (next_good_df != raw_data.end()) {
         data.push_back(*next_good_df);
         next_good_df++;
       }
     } else {
-      for (auto df : ds->raw_data) data.push_back(df);
+      for (auto df : raw_data) data.push_back(df);
     }
   }
 

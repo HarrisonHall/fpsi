@@ -42,7 +42,7 @@ public:
 private:
   double agg_per_sec = 4.0;  // Number of data aggregates per second
   std::map<std::string, std::shared_ptr<DataSource>> data_sources;
-  static const unsigned int MAX_DATA_IN_MEMORY = 10;
+  //static const unsigned int MAX_DATA_IN_MEMORY = 10;
 	bool closed = false;
 };
 

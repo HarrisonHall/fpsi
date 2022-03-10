@@ -46,9 +46,7 @@ public:
     if (agg_data.find("counter") == agg_data.end()) return;
     auto df = (*agg_data.find("counter")).second;
     double value = df->get_data().value<double>("value", 0.0);
-    if (df) {
-      util::log(util::warning, "Got avg value %f", value);
-    }
+
     int level = ::fpsi::session->get_state("counter_level").value<int>("level", 0);
     if (value <= 10) {
     } else if (value >= 10 && value <= 20 && level != 1) {
@@ -59,10 +57,10 @@ public:
   }
 
   void pre_state_change(const std::string &key, const json &last, const json &next) {
-    util::log("(pre) state changed for %s", key.c_str());
+    util::log("counter: (pre) state changed for %s", key.c_str());
   }
   void post_state_change(const std::string &key, const json &last, const json &next) {
-    util::log("(post) state changed for %s", key.c_str());
+    util::log("counter: (post) state changed for %s", key.c_str());
   }
 
 private:
