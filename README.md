@@ -11,7 +11,7 @@ of my projects are sufficiently developed I will link it here.
 ## Install
 ```bash
 # Pull submodules
-git submodule update --init --recursive
+git submodule update --init --recursive --depth 1
 
 # Build yaml-cpp
 cd include/yaml-cpp

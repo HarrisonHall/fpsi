@@ -2,5 +2,5 @@
 	path = include/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
 [submodule "plugins/imgui-gui/imgui"]
-	path = plugins/imgui-gui/imgui
+	path = plugins/imgui-gui/include/imgui
 	url = https://github.com/ocornut/imgui

@@ -1,5 +1,5 @@
-LOCAL_LIBS = -I./fpsi/src -I./fpsi/include
-INCLUDE_LOC = -I./fpsi/include/yaml-cpp/include/yaml-cpp -I./fpsi/include/yaml-cpp/build -L./fpsi/include/yaml-cpp/build
+LOCAL_LIBS = -I./include/fpsi/src -I./include/fpsi/include
+INCLUDE_LOC = -I./include/fpsi/include/yaml-cpp/include/yaml-cpp -I./include/fpsi/include/yaml-cpp/build -L./include/fpsi/include/yaml-cpp/build
 LIBS = $(LOCAL_LIBS) $(INCLUDE_LOC)
 
 

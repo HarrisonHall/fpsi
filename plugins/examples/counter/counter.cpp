@@ -1,15 +1,15 @@
 // counter.cpp
 
-#include "fpsi/src/plugin/plugin.hpp"
+#include "plugin/plugin.hpp"
 
 #include <iostream>
 #include <unistd.h>
 #include <cstdio>
 #include <thread>
 
-#include "fpsi/src/session/session.hpp"
-#include "fpsi/src/data/datahandler.hpp"
-#include "fpsi/src/util/logging.hpp"
+#include "session/session.hpp"
+#include "data/datahandler.hpp"
+#include "util/logging.hpp"
 
 
 namespace fpsi {

@@ -1,0 +1,15 @@
+name: "Counter Example"
+
+DEBUG: true
+
+plugins:
+  counter:
+    path: "counter.so"
+    config: {}
+  sqlite-db:
+    path: "include/fpsi/plugins/sqlite-db/sqlite-db.so"
+    config:
+      db_path: ":memory:"
+  imgui-gui:
+    path: "include/fpsi/plugins/imgui-gui/imgui-gui.so"
+    config: {}

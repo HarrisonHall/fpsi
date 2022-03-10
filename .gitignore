@@ -1,17 +1,10 @@
 fpsi
-config.yaml
-
-*.sqlite
 
 *~
 *#
 *.o
 *.so
 
-logo.c
-
-# Refactor
-debug/
-target/
-Cargo.lock
-**/*.rs.bk
+# plugin-related
+*.sqlite
+imgui.ini

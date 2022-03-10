@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
 
 	// Create startup message
 	std::stringstream startup_message;
-  util::log(util::message, "FPSI Node: %s", fpsi::session->get_name().c_str());
+  util::log(util::message, "FPSI Node -> %s", fpsi::session->get_name().c_str());
 
 	util::log("agg_delay: %u", ::fpsi::session->data_handler->agg_delay_ms());
   while (!fpsi::session->exiting) {
