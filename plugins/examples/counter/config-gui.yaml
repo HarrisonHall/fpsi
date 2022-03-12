@@ -3,6 +3,9 @@ name: "Counter Example"
 DEBUG: true
 
 plugins:
+  imgui-gui:
+    path: "include/fpsi/plugins/imgui-gui/imgui-gui.so"
+    config: {}
   sqlite-db:
     path: "include/fpsi/plugins/sqlite-db/sqlite-db.so"
     config:

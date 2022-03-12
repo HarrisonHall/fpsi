@@ -2,14 +2,23 @@
 
 #include "plugin/plugin.hpp"
 
-#include <iostream>
-#include <unistd.h>
 #include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <memory>
 #include <thread>
+#include <unistd.h>
+#include <vector>
 
 #include "session/session.hpp"
 #include "data/datahandler.hpp"
 #include "util/logging.hpp"
+
+#ifdef GUI
+#include "imgui.h"
+#include "implot.h"
+#include "imgui-gui.hpp"
+#endif
 
 
 namespace fpsi {
@@ -18,11 +27,23 @@ class Counter : public Plugin {
 public:
   Counter(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config) :
 		Plugin(plugin_name, plugin_path, plugin_config) {
-    util::log(util::debug, "Created counter");
-		void *s = &(::fpsi::session);
 		::fpsi::session->data_handler->create_data_source("counter");
     counter_thread = new std::thread(&Counter::count, this);
     ::fpsi::session->set_state("counter_level", {{"level", 0}});
+
+#ifdef GUI
+		auto _imgui_plugin = ::fpsi::session->get_plugin("imgui-gui");
+		if (_imgui_plugin) {
+			ImGuiGUI* imgui_plugin = reinterpret_cast<ImGuiGUI*>(_imgui_plugin.get());
+
+			util::log("Registering new gui display");
+			imgui_plugin->register_gui([this]() {
+				this->display_gui();
+			});
+		} else {
+			util::log(util::error, "Unable to find loaded imgui-gui plugin");
+		}
+#endif
   }
 
   ~Counter() {
@@ -62,6 +83,39 @@ public:
   void post_state_change(const std::string &key, const json &last, const json &next) {
     util::log("counter: (post) state changed for %s", key.c_str());
   }
+
+#ifdef GUI
+	void display_gui() {
+		static std::vector<double> recent_counts;
+		
+		//auto last_agg = ::fpsi::session->data_handler->get_newest_agg("counter");
+		/*
+		if (last_agg) {
+			//recent_counts.push_back(last_agg->get_data().value<double>("value", 0.0) + (rand() % 10) * 0.1);
+			//if (recent_counts.size() > 400) recent_counts.erase(recent_counts.begin());
+			}*/
+		
+		
+		ImGui::Begin("Counter Graphs");
+		ImGui::Text("Here!");
+		/*
+		if (ImPlot::BeginPlot("My Plot")) {
+			//ImPlot::PlotBars("Count w/ variation", (double *)recent_counts.data(), recent_counts.size());
+			//ImPlot::PlotBars("My Bar Plot", bar_data, 11);
+			//ImPlot::PlotLine("My Line Plot", x_data, y_data, 1000);
+			
+
+			ImPlot::EndPlot();
+			}*/
+		ImGui::End();
+
+		// Counter window
+		ImGui::Begin("Count");
+		ImGui::Text("Count: %lu", this->value);
+		ImGui::End();
+		return;
+	}
+#endif
 
 private:
   std::thread *counter_thread;

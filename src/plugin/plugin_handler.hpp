@@ -21,7 +21,7 @@ class Session;
 
 extern std::vector<void *> so_handles;
 
-std::shared_ptr<Plugin> create_plugin(Session *session, const std::string &plugin_name, const json &plugin_config);
+std::shared_ptr<Plugin> create_plugin(const std::string &plugin_name, const json &plugin_config);
 
 std::vector<std::shared_ptr<Plugin>> load_plugins(const std::vector<std::pair<std::string, json>> &plugins);
 

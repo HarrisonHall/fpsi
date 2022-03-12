@@ -1,0 +1,9 @@
+name: "ZeroMQ-Socket"
+
+DEBUG: true
+
+plugins:
+  zmq-server:
+    path: "zeromq-socket.so"
+    config:
+      is_client: true

@@ -1,6 +1,6 @@
 // sqlite-db.cpp
 
-#include "fpsi/src/plugin/plugin.hpp"
+#include "plugin/plugin.hpp"
 
 #include <cassert>
 #include <cstring>
@@ -23,7 +23,6 @@ class SQLiteDB : public Plugin {
 public:
   SQLiteDB(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config) :
 		Plugin(plugin_name, plugin_path, plugin_config) {
-    log(util::debug, "Creating sqlite-db");
 
 		// Read config
 		std::string db_path = plugin_config.value<std::string>("db_path", "/tmp/fpsi.sqlite");

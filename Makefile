@@ -1,5 +1,5 @@
 LOCAL_LIBS = -I./src -I./include
-INCLUDE_LOC = -I./include/yaml-cpp/include/yaml-cpp -I./include/yaml-cpp/build -L./include/yaml-cpp/build
+INCLUDE_LOC = -I./include/yaml-cpp/include -I./include/yaml-cpp/include/yaml-cpp -I./include/yaml-cpp/build/include -L./include/yaml-cpp/build
 INCLUDE_LIBS = -ldl
 LIBS = $(LOCAL_LIBS) $(INCLUDE_LOC) $(INCLUDE_LIBS)
 CXXFLAGS = -Wall -std=c++17 -pthread -Wl,--export-dynamic -g

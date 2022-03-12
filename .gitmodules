@@ -4,3 +4,12 @@
 [submodule "plugins/imgui-gui/imgui"]
 	path = plugins/imgui-gui/include/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "plugins/imgui-gui/include/implot"]
+	path = plugins/imgui-gui/include/implot
+	url = https://github.com/epezent/implot
+[submodule "plugins/zeromq/include/libzmq"]
+	path = plugins/zeromq/include/libzmq
+	url = https://github.com/zeromq/libzmq
+[submodule "include/tojson"]
+	path = include/tojson
+	url = https://github.com/mircodezorzi/tojson

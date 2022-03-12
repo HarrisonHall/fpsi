@@ -4,6 +4,8 @@
 //// https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
 //// Very helpful for checking how widgets are used
 
+#define IMGUIGUICPP
+
 #include <cassert>
 #include <cstring>
 #include <deque>
@@ -13,7 +15,13 @@
 #include <string>
 #include <thread>
 
+#include <GLFW/glfw3.h> // Will drag system OpenGL headers
+#include "imgui_impl_opengl3.h"
+#include "imgui_impl_glfw.h"
+#include "implot.h"
+
 #include "imgui-gui.hpp"
+
 
 #include "data/datahandler.hpp"
 #include "data/dataframe.hpp"
@@ -21,7 +29,7 @@
 #include "session/session.hpp"
 #include "util/logging.hpp"
 
-
+GLFWwindow *window = nullptr;
 
 static void glfw_error_callback(int error, const char* description) {
 	util::log(util::error, "Glfw Error %d: %s\n", error, description);
@@ -64,6 +72,7 @@ GLFWwindow* setup_imgui() {
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+	ImPlot::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -131,7 +140,6 @@ namespace fpsi {
 
 ImGuiGUI::ImGuiGUI(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config) :
 	Plugin(plugin_name, plugin_path, plugin_config) {
-	log(util::debug, "Creating imgui GUI");
 		
 	this->gui_thread = new std::thread(&ImGuiGUI::event_loop, this);
 }
@@ -149,9 +157,9 @@ ImGuiGUI::~ImGuiGUI() {
 void ImGuiGUI::event_loop() {
 	// The window must be set up in the event loop since opengl contexts are
 	// thread-local
-	this->window = setup_imgui();
+	window = setup_imgui();
 
-	if (this->window == nullptr) {
+	if (window == nullptr) {
 		util::log(util::error, "Window is null");
 		return;
 	}
@@ -172,6 +180,12 @@ void ImGuiGUI::event_loop() {
 		this->data_window_event();  // Create data window
 		this->state_window_event();  // Create state window
 		this->about_window();
+
+		// Creat additional windows
+		{
+			const std::lock_guard<std::mutex> glock(this->additional_gui_lock);
+			for (auto f : this->additional_guis) f();
+		}
 			
 		// Finish rendering
 		ImGui::Render();
@@ -191,12 +205,13 @@ void ImGuiGUI::event_loop() {
 void ImGuiGUI::cleanup_window() {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
+	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 		
 	glfwDestroyWindow(window);
 	glfwTerminate();
 
-	this->window = nullptr;
+	window = nullptr;
 }
 
 void ImGuiGUI::session_window_event() {

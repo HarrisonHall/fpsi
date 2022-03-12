@@ -1,15 +1,13 @@
-#include "fpsi/src/plugin/plugin.hpp"
+#include "plugin/plugin.hpp"
 
-#include <unistd.h>
+#include <functional>
+#include <memory>
 #include <string>
 #include <thread>
-
-#include <GLFW/glfw3.h> // Will drag system OpenGL headers
+#include <unistd.h>
+#include <vector>
 
 #include "imgui.h"
-#include "imgui_impl_opengl3.h"
-#include "imgui_impl_glfw.h"
-
 
 namespace fpsi {
 
@@ -18,10 +16,14 @@ public:
   ImGuiGUI(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config);
   ~ImGuiGUI();
 
-private:
-  GLFWwindow *window = nullptr;
-	std::thread *gui_thread = nullptr;
+	void register_gui(std::function<void(void)> additional_gui) {
+		const std::lock_guard<std::mutex> glock(this->additional_gui_lock);
+		this->additional_guis.push_back(additional_gui);
+	}
 
+private:
+	
+	std::thread *gui_thread = nullptr;
 	bool show_about_window = false;
 
 	void event_loop();
@@ -30,6 +32,9 @@ private:
 	void data_window_event();
 	void state_window_event();
 	void about_window();
+
+	std::mutex additional_gui_lock;
+	std::vector<std::function<void(void)>> additional_guis;
 	
 };
 
