@@ -36,7 +36,6 @@ public:
 			this->responder = zmq_socket(context, ZMQ_REP);
 			int rc = zmq_bind(this->responder, this->ip.c_str());
 			assert (rc == 0);
-			util::log(util::debug, "started zeromq server")
 			
 			// Continue looking for messages
 			auto server_loop_function = [this]() {
@@ -62,7 +61,6 @@ public:
 			// Finish connecting
 			this->requester = zmq_socket (context, ZMQ_REQ);
 			zmq_connect(this->requester, this->ip.c_str());
-			util::log(util::debug, "started zeromq client")
 			
 			// Continue receiving messages
 			auto client_loop_function = [this]() {

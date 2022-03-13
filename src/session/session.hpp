@@ -36,9 +36,9 @@ public:
 	}
 
 	std::shared_ptr<Plugin> get_plugin(const std::string &name);  // Get plugin by name
-  std::vector<std::pair<std::string, json>> get_plugins(YAML::Node &);  // Parse plugin information from yaml
 	std::vector<std::shared_ptr<Plugin>> get_loaded_plugins();  // Get all loaded plugins
 	bool load_plugin();
+	bool load_plugins_from_config();
 	bool unload_plugin(const std::string &name);
 
   void set_state(std::string, const json &);  // Set state in state-registry
@@ -65,7 +65,7 @@ public:
 
   
 private:
-  json raw_config;  // Parsed config file (converted from yaml)
+	nlohmann::ordered_json raw_config;  // Parsed config file (converted from yaml)
 	std::string config_path = "config.yaml";  // Path to config file
   bool verbose = false;  // Prints verbose (info & debug) information
   bool debug = false;  // Prints debug information

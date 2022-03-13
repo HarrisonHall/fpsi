@@ -17,7 +17,7 @@
 
 namespace fpsi {
 
-Session *session = nullptr;
+std::unique_ptr<Session> session;
 
 // Handle ctrl+c interrupt
 // On second interrupt force-quits fpsi
@@ -40,9 +40,8 @@ int main(int argc, char **argv) {
 	// Set SIGINT (ctrl+c) to call interupt_handler
   signal(SIGINT, fpsi::interrupt_handler);
 
-	// Create global session object
-  fpsi::session = new fpsi::Session(argc, argv);
-	
+  fpsi::session = std::make_unique<fpsi::Session>(argc, argv);  // Create global session object
+	fpsi::session->load_plugins_from_config();
 
 	// Create startup message
 	std::stringstream startup_message;
@@ -57,6 +56,5 @@ int main(int argc, char **argv) {
 
   fpsi::session->finish();
 
-  delete fpsi::session;
   return 0;
 }

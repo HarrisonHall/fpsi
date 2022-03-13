@@ -28,29 +28,12 @@ const size_t max_state_size = 10;
 namespace fpsi {
 
 Session::Session(int argc, char **argv) {
-	::fpsi::session = this;  // Session should be a global singleton
   this->parse_cli(argc, argv);
 	auto config_yaml = YAML::LoadFile(this->config_path);
-	raw_config = util::from_yaml(config_yaml);
+	this->raw_config = util::from_yaml(config_yaml);
 
 	this->data_handler = std::make_shared<DataHandler>(
 		this->get_from_config<double>("aggregations_per_second", 4.0));
-  
-	// Load plugins
-	for (auto plug_info : this->get_plugins(config_yaml)) {
-		auto plugin_name = plug_info.first;
-		auto plugin_conf = plug_info.second;
-		auto new_plugin = create_plugin(plugin_name, plugin_conf);
-    if (!new_plugin) {
-      util::log(util::error, "Unable to load plugin for %s", plugin_name.c_str());
-    } else {
-			util::log(util::debug, "grabbing lock");
-			const std::lock_guard<std::mutex> plock(this->plugin_lock);
-			util::log(util::debug, "got lock");
-      this->plugins.push_back(new_plugin);
-      util::log(util::debug, "Loaded plugin for %s", plugin_name.c_str());
-    }
-	}
 }
 
 void Session::parse_cli(int argc, char **argv) {
@@ -157,17 +140,6 @@ std::shared_ptr<Plugin> Session::get_plugin(const std::string &name) {
 		}
 	}
 	return nullptr;
-}
-
-std::vector<std::pair<std::string, json>> Session::get_plugins(YAML::Node &config_yaml) {
-  std::vector<std::pair<std::string, json>> plugins;
-  YAML::Node config_plugins = config_yaml["plugins"];
-  for (auto plug_iter : config_plugins) {
-    std::string plug_name = plug_iter.first.as<std::string>("");
-    json plug_info = util::from_yaml(plug_iter.second);
-    plugins.push_back(std::make_pair(plug_name, plug_info));
-  }
-  return plugins;
 }
 
 std::vector<std::string> Session::get_state_keys() {
@@ -321,6 +293,35 @@ bool Session::load_plugin() {
 	const std::lock_guard<std::mutex> plock(this->plugin_lock);
 	// TODO - put plugin_handler::create_plugin here
 	return false;
+}
+
+bool Session::load_plugins_from_config() {
+	// Get plugins from config
+	std::vector<std::pair<std::string, json>> raw_plugins;
+  nlohmann::ordered_json config_plugins = this->raw_config.value<nlohmann::ordered_json>(
+		"plugins", nlohmann::ordered_json::object());
+  for (const auto &plug_iter : config_plugins.items()) {
+    std::string plug_name = plug_iter.key();
+    json plug_info = plug_iter.value();
+    raw_plugins.push_back(std::make_pair(plug_name, plug_info));
+  }
+
+	// Load plugins
+	for (const auto &plug_info : raw_plugins) {
+		auto plugin_name = plug_info.first;
+		auto plugin_conf = plug_info.second;
+		auto new_plugin = create_plugin(plugin_name, plugin_conf);  // TODO Replace with load_plugin
+    if (!new_plugin) {
+      util::log(util::error, "Unable to load plugin for %s", plugin_name.c_str());
+    } else {
+			util::log(util::debug, "grabbing lock");
+			const std::lock_guard<std::mutex> plock(this->plugin_lock);
+			util::log(util::debug, "got lock");
+      this->plugins.push_back(new_plugin);
+      util::log(util::debug, "Loaded plugin for %s", plugin_name.c_str());
+    }
+	}
+	return true;
 }
 
 bool Session::unload_plugin(const std::string &name) {
