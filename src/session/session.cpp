@@ -253,6 +253,8 @@ void Session::receive(const json &message) {
 		}
 	}
 	if (is_name_empty || is_from_self || !has_valid_timestamp) {
+		//util::log(util::warning, "Received invalid message %s", message.dump().c_str());
+		//util::log(util::warning, "Received invalid message %d %d %d", is_name_empty, is_from_self, has_valid_timestamp);
 		return;
 	}
 	
