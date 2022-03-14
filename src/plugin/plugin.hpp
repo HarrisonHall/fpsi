@@ -23,7 +23,7 @@ public:
   virtual void pre_aggregate(const std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> &raw_data) {}
 
 	// Called by main session loop  after data has been aggregated
-  virtual void post_aggregate(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {}
+  virtual void post_aggregate(const std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> &agg_data) {}
 
 	// Called when a state changes (from ::fpsi::session->set_state(...))
   virtual void state_change(const std::string &key, const json &last, const json &next) {}

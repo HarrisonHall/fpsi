@@ -37,7 +37,7 @@ public:
 
 	std::shared_ptr<Plugin> get_plugin(const std::string &name);  // Get plugin by name
 	std::vector<std::shared_ptr<Plugin>> get_loaded_plugins();  // Get all loaded plugins
-	bool load_plugin();
+	std::shared_ptr<Plugin> load_plugin(const std::string &plugin_name, const json &plugin_info);
 	bool load_plugins_from_config();
 	bool unload_plugin(const std::string &name);
 
@@ -61,8 +61,7 @@ public:
   std::thread *state_thread = nullptr;
 	std::thread *broadcast_thread = nullptr;
 	std::thread *receive_thread = nullptr;
-  bool exiting = false;
-
+  bool exiting = false;  // True when fpsi is exiting and threads should stop asap
   
 private:
 	nlohmann::ordered_json raw_config;  // Parsed config file (converted from yaml)

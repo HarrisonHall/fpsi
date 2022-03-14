@@ -133,15 +133,18 @@ public:
 		}
   }
 
-  void post_aggregate(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {
-		this->update_packet(agg_data);
+  void post_aggregate(const std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> &agg_data) {
+		for (auto [source_name, dfs] : agg_data)
+			for (auto df : dfs)
+				this->update_df(df);
   }
 
 	void post_state(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {
-		this->update_packet(agg_data);
+		for (auto [source_name, df] : agg_data)
+			this->update_df(df);
   }
 
-	void update_packet(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {
+	void update_df(std::shared_ptr<DataFrame> df) {
 		const std::string sqlite_name = this->name;
 		static auto update_in_db = [this, sqlite_name](DataFrame *df) {
 			if (!::fpsi::session->get_plugin(sqlite_name)) return;  // sqlite has been unloaded
@@ -174,36 +177,34 @@ public:
 			return;
 		};
 
-		for (auto [source, df] : agg_data) {
-			// Insert into db
-			std::string insert_df =
-				"INSERT INTO dataframes(df_source, df_type, df_data, df_time) "
-				"VALUES(?, ?, ?, ?)";
-			sqlite3_stmt *statement;
-			int failed = sqlite3_prepare_v2(this->db, insert_df.c_str(), insert_df.size(), &statement, NULL);
-			
-			// Bind vars
-			failed = sqlite3_bind_text(statement, 1, df->get_source().c_str(), -1, SQLITE_TRANSIENT);
-			assert(("Failed to bind source", failed == SQLITE_OK));
-			failed = sqlite3_bind_text(statement, 2, df->get_type().c_str(), -1, SQLITE_TRANSIENT);
-			assert(("Failed to bind text", failed == SQLITE_OK));
-			auto df_bson = df->get_bson();
-			failed = sqlite3_bind_blob(statement, 3, df_bson.data(), df_bson.size(), SQLITE_TRANSIENT);
-			assert(("Failed to bind blob", failed == SQLITE_OK));
-			failed = sqlite3_bind_text(statement, 4, df->get_time().c_str(), -1, SQLITE_TRANSIENT);
-			assert(("Failed to bind time", failed == SQLITE_OK));
-			
-			// Exec
-			failed = sqlite3_step(statement);
-			assert(("sqlite insert is a single operation", failed = SQLITE_DONE));
-			sqlite3_finalize(statement);
-
-			// Update id
-			df->set_id(sqlite3_last_insert_rowid(db));
-
-			// Add callback to update on deletion
-			df->add_destructor_callback(update_in_db);
-		}
+		// Insert into db
+		std::string insert_df =
+			"INSERT INTO dataframes(df_source, df_type, df_data, df_time) "
+			"VALUES(?, ?, ?, ?)";
+		sqlite3_stmt *statement;
+		int failed = sqlite3_prepare_v2(this->db, insert_df.c_str(), insert_df.size(), &statement, NULL);
+		
+		// Bind vars
+		failed = sqlite3_bind_text(statement, 1, df->get_source().c_str(), -1, SQLITE_TRANSIENT);
+		assert(("Failed to bind source", failed == SQLITE_OK));
+		failed = sqlite3_bind_text(statement, 2, df->get_type().c_str(), -1, SQLITE_TRANSIENT);
+		assert(("Failed to bind text", failed == SQLITE_OK));
+		auto df_bson = df->get_bson();
+		failed = sqlite3_bind_blob(statement, 3, df_bson.data(), df_bson.size(), SQLITE_TRANSIENT);
+		assert(("Failed to bind blob", failed == SQLITE_OK));
+		failed = sqlite3_bind_text(statement, 4, df->get_time().c_str(), -1, SQLITE_TRANSIENT);
+		assert(("Failed to bind time", failed == SQLITE_OK));
+		
+		// Exec
+		failed = sqlite3_step(statement);
+		assert(("sqlite insert is a single operation", failed = SQLITE_DONE));
+		sqlite3_finalize(statement);
+		
+		// Update id
+		df->set_id(sqlite3_last_insert_rowid(db));
+		
+		// Add callback to update on deletion
+		df->add_destructor_callback(update_in_db);
 	}
 
 private:

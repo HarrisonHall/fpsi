@@ -106,45 +106,46 @@ std::shared_ptr<DataFrame> DataHandler::create_stt(std::shared_ptr<DataFrame> df
   return df;
 }
 
-std::shared_ptr<DataFrame> DataHandler::get_newest_agg(const std::string &source) {
-	if (this->closed) return nullptr;
-  if (this->data_sources.find(source) != this->data_sources.end()) {
-    auto ds = this->data_sources[source];
-    //if (ds->agg_data.size() > 0) return ds->agg_data[ds->agg_data.size() - 1];
-		return ds->get_agg_data().back();
-  }
-  return std::shared_ptr<DataFrame>(nullptr);
-}
-
-bool DataHandler::update_data_frame(const DataFrame &df) {
-  //this->db.update(df); - TODO - hook?
-  return true;
-}
-
-std::vector<std::shared_ptr<DataFrame>> DataHandler::get_recent_data(const std::string &source) {
-	if (this->closed) return {};
-  std::vector<std::shared_ptr<DataFrame>> data;
-  if (this->data_sources.find(source) == this->data_sources.end()) return data;
+std::vector<std::shared_ptr<DataFrame>> DataHandler::get_new_aggs(const std::string &source) {
+	if (this->closed) return {};  // Don't get data is source is closed
+	if (this->data_sources.find(source) == this->data_sources.end()) return {};
+  std::vector<std::shared_ptr<DataFrame>> new_data;
+  
   auto ds = this->data_sources[source];
-  if (!ds->last_raw) {
-    for (auto df : ds->get_raw_data()) data.push_back(df);
-  } else {
-		auto raw_data = ds->get_raw_data();
-    auto next_good_df = std::find(raw_data.begin(), raw_data.end(), ds->last_raw)++;
-    if (next_good_df != raw_data.end()) {
-      while (next_good_df != raw_data.end()) {
-        data.push_back(*next_good_df);
-        next_good_df++;
-      }
-    } else {
-      for (auto df : raw_data) data.push_back(df);
-    }
-  }
+	auto all_agg_data = ds->get_agg_data();
+	for (const auto &df : all_agg_data) {
+		if (df == ds->last_agg) {
+			new_data.clear();
+			continue;
+		}
+		new_data.push_back(df);
+	}
 
-  if (!data.empty())
-    ds->last_raw = data.back();
+	if (new_data.size() > 0)
+		ds->last_agg = new_data.back();
 
-  return data;
+	return new_data;
+}
+
+std::vector<std::shared_ptr<DataFrame>> DataHandler::get_new_raws(const std::string &source) {
+	if (this->closed) return {};  // Don't get data is source is closed
+	if (this->data_sources.find(source) == this->data_sources.end()) return {};
+  std::vector<std::shared_ptr<DataFrame>> new_data;
+  
+  auto ds = this->data_sources[source];
+	auto all_raw_data = ds->get_raw_data();
+	for (const auto &df : all_raw_data) {
+		if (df == ds->last_raw) {
+			new_data.clear();
+			continue;
+		}
+		new_data.push_back(df);
+	}
+
+	if (new_data.size() > 0)
+		ds->last_raw = new_data.back();
+
+	return new_data;
 }
 
 std::shared_ptr<DataSource> DataHandler::get_source(const std::string &source) {

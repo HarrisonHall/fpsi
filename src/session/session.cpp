@@ -1,6 +1,7 @@
 // Session definition
 
 #include <cmath>
+#include <dlfcn.h>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -12,14 +13,13 @@
 #include "CLI11.hpp"
 #include "yaml.h"
 
-#include "plugin/plugin_handler.hpp"
+#include "data/datahandler.hpp"
+#include "data/datasource.hpp"
 #include "plugin/plugin.hpp"
 #include "util/yaml_json.hpp"
 #include "util/logging.hpp"
 #include "util/time.hpp"
 
-
-#include "data/datahandler.hpp"
 #include "session.hpp"
 
 const size_t max_state_size = 10;
@@ -92,7 +92,7 @@ void Session::aggregate_data() {
 		// Get raw data
 		std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> new_data;
 		for (auto ds_name : ::fpsi::session->data_handler->get_sources()) {
-			new_data[ds_name] = ::fpsi::session->data_handler->get_recent_data(ds_name);
+			new_data[ds_name] = ::fpsi::session->data_handler->get_new_raws(ds_name);
 		}
 		
 		// Call pre_aggregate for each plugin
@@ -105,19 +105,21 @@ void Session::aggregate_data() {
 			delete thread;
 		}
 
-		// TODO - consider emptying raw data
+		// Stop tracking raw data
+		for (auto ds_name : ::fpsi::session->data_handler->get_sources()) {
+			::fpsi::session->data_handler->get_source(ds_name)->clear_raw();
+		}
 
 		// Get agg data
-		std::map<std::string, std::shared_ptr<DataFrame>> agg_data;
+		std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> agg_data;
 		for (auto ds_name : ::fpsi::session->data_handler->get_sources()) {
-			agg_data[ds_name] = ::fpsi::session->data_handler->get_newest_agg(ds_name);
+			agg_data[ds_name] = ::fpsi::session->data_handler->get_new_aggs(ds_name);
 		}
 
 		// Run post-aggregate hook for each plugin
 		threads.clear();
 		for (auto plugin : plugins) {
 			threads.push_back(new std::thread(&Plugin::post_aggregate, plugin.get(), agg_data));
-			//threads.push_back(new std::thread([plugin](){plugin->post_aggregate();}));
 		}
 		for (auto thread : threads) {
 			thread->join();
@@ -125,6 +127,7 @@ void Session::aggregate_data() {
 		}
 	};
 
+	// TODO - Consider in-loop to minimize active sleep //aggregate_function();
 	this->aggregate_thread = new std::thread(aggregate_function);
 }
 
@@ -291,10 +294,51 @@ void Session::receive(const json &message) {
 }
 
 
-bool Session::load_plugin() {
-	const std::lock_guard<std::mutex> plock(this->plugin_lock);
-	// TODO - put plugin_handler::create_plugin here
-	return false;
+std::shared_ptr<Plugin> Session::load_plugin(const std::string &plugin_name, const json &plugin_info) {
+	static std::vector<void *> so_handles;
+
+	// Ensure plugin actually exists
+	std::string plugin_file = plugin_info.value<std::string>("path", "");
+  std::string real_plugin_location = "./" + plugin_file;
+  std::filesystem::path f(real_plugin_location);
+  if (!std::filesystem::exists(f)) {
+    util::log(util::warning, "File %s does not exist", real_plugin_location.c_str());
+    return nullptr;
+  }
+
+	// Get handle to shared-object file
+	//// Allow symbols to be resolved dynamically and allow plugins to have each other's symbols
+  void *so_handle = dlopen(real_plugin_location.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+  if (!so_handle) {
+    util::log(util::warning, "Unable to open handle to so for %s", plugin_name.c_str());
+    return nullptr;
+  }
+
+	// Get construct function
+  void *acquire_func = dlsym(so_handle, "construct_plugin");
+  if (!acquire_func) {
+    util::log(util::warning, "Unable to get function for construct_plugin fo %s", plugin_name.c_str());
+    return nullptr;
+  }
+  Plugin *(*acq)(const std::string &, const std::string &, const json &);
+  acq = (Plugin *(*)(const std::string &, const std::string &, const json &))acquire_func;
+
+	// Load plugin
+  Plugin *new_plugin = acq(plugin_name, real_plugin_location, plugin_info.value<json>("config", json::object()));
+  if (!new_plugin) {
+    util::log(util::warning, "Unable to initialize plugin object for %s", plugin_name.c_str());
+    return nullptr;
+  }
+
+	// Track plugin
+	{
+		const std::lock_guard<std::mutex> plock(this->plugin_lock);
+		util::log(util::debug, "got lock");
+		this->plugins.push_back(std::shared_ptr<Plugin>(new_plugin));
+		so_handles.push_back(so_handle);  // Track handle - TODO - in the future consider unloading these at unload
+	}
+	util::log(util::debug, "Loaded plugin for %s", plugin_name.c_str());
+	return this->plugins.back();
 }
 
 bool Session::load_plugins_from_config() {
@@ -312,16 +356,7 @@ bool Session::load_plugins_from_config() {
 	for (const auto &plug_info : raw_plugins) {
 		auto plugin_name = plug_info.first;
 		auto plugin_conf = plug_info.second;
-		auto new_plugin = create_plugin(plugin_name, plugin_conf);  // TODO Replace with load_plugin
-    if (!new_plugin) {
-      util::log(util::error, "Unable to load plugin for %s", plugin_name.c_str());
-    } else {
-			util::log(util::debug, "grabbing lock");
-			const std::lock_guard<std::mutex> plock(this->plugin_lock);
-			util::log(util::debug, "got lock");
-      this->plugins.push_back(new_plugin);
-      util::log(util::debug, "Loaded plugin for %s", plugin_name.c_str());
-    }
+		auto new_plugin = this->load_plugin(plugin_name, plugin_conf);
 	}
 	return true;
 }
@@ -337,7 +372,7 @@ bool Session::unload_plugin(const std::string &name) {
 		}
 	}
 	if (!found_plugin) return false;
-	
+
 	// Get rid of plugin (or rather, stop tracking it)
 	this->plugins.erase(std::find(this->plugins.begin(), this->plugins.end(), found_plugin));
 	// Plugin should naturally deconstruct after this return and every other

@@ -1,0 +1,7 @@
+name: "Template"
+
+plugins:
+  template-plugin:
+    path: "template.so"
+    config:
+      foo: "bar"

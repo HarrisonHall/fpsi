@@ -13,3 +13,6 @@
 [submodule "include/tojson"]
 	path = include/tojson
 	url = https://github.com/mircodezorzi/tojson
+[submodule "plugins/imgui-gui/include/ImGuiFileDialog"]
+	path = plugins/imgui-gui/include/ImGuiFileDialog
+	url = https://github.com/aiekick/ImGuiFileDialog

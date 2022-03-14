@@ -63,10 +63,11 @@ public:
     auto agg_df = ::fpsi::session->data_handler->create_agg("counter", new_data);
   }
 
-  void post_aggregate(const std::map<std::string, std::shared_ptr<DataFrame>> &agg_data) {
+  void post_aggregate(const std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> &agg_data) {
     if (agg_data.find("counter") == agg_data.end()) return;
-    auto df = (*agg_data.find("counter")).second;
-    double value = df->get_data().value<double>("value", 0.0);
+    auto dfs = (*agg_data.find("counter")).second;
+		if (dfs.size() == 0) return;
+    double value = dfs.back()->get_data().value<double>("value", 0.0);
 
     int level = ::fpsi::session->get_state("counter_level").value<int>("level", 0);
     if (value <= 10) {
