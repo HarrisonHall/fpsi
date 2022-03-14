@@ -299,12 +299,17 @@ std::shared_ptr<Plugin> Session::load_plugin(const std::string &plugin_name, con
 
 	// Ensure plugin actually exists
 	std::string plugin_file = plugin_info.value<std::string>("path", "");
-  std::string real_plugin_location = "./" + plugin_file;
-  std::filesystem::path f(real_plugin_location);
-  if (!std::filesystem::exists(f)) {
-    util::log(util::warning, "File %s does not exist", real_plugin_location.c_str());
+	if (plugin_file.size() == 0) {
+		util::log(util::warning, "No path provided for plugin %s", plugin_name.c_str());
+		return nullptr;
+	}
+	if (plugin_file.substr(0, 1) != std::string("/")) plugin_file = "./" + plugin_file;
+  std::filesystem::path fpath(plugin_file);
+  if (!std::filesystem::exists(fpath)) {
+    util::log(util::warning, "File %s does not exist", plugin_file.c_str());
     return nullptr;
   }
+	std::string real_plugin_location = {std::filesystem::absolute(fpath)};
 
 	// Get handle to shared-object file
 	//// Allow symbols to be resolved dynamically and allow plugins to have each other's symbols

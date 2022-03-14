@@ -2,8 +2,9 @@ LOCAL_LIBS = -I./include/fpsi/src -I./include/fpsi/include
 INCLUDE_LOC = -I./include/fpsi/include/yaml-cpp/include/yaml-cpp -I./include/fpsi/include/yaml-cpp/build -L./include/fpsi/include/yaml-cpp/build
 IMGUI_INC = -I./include/imgui -I./include/imgui/backends
 IMPLOT_INC = -I./include/implot
+IMDIALOG_INC = -I./include/ImGuiFileDialog
 GFX_LIBS = -lglfw -lrt -lm -ldl -lX11 -lpthread -lxcb -lXau -lXdmcp -lGL
-LIBS = $(LOCAL_LIBS) $(GFX_LIBS) $(INCLUDE_LOC) $(IMGUI_INC) $(IMPLOT_INC) -I./include
+LIBS = $(LOCAL_LIBS) $(GFX_LIBS) $(INCLUDE_LOC) $(IMGUI_INC) $(IMPLOT_INC) $(IMDIALOG_INC) -I./include
 CXXFLAGS = --std=c++17 -g -Wall -Wformat -fPIC
 
 # `pkg-config --static --libs glfw3` `pkg-config --cflags glfw`
@@ -28,8 +29,11 @@ implot.o:
 	$(CXX) $(LIBS) $(CXXFLAGS) -c include/implot/implot_items.cpp -o implot-items.o
 	ld -r implot-raw.o implot-items.o -o implot.o
 
-all: imgui-gui.cpp imgui-rend.o imgui-gfx.o imgui-general.o implot.o
-	$(CXX) $(LIBS) $(CXXFLAGS) -shared imgui-gui.cpp imgui-general.o imgui-gfx.o imgui-rend.o implot.o -o imgui-gui.so
+imdialog.o:
+	$(CXX) $(LIBS) $(CXXFLAGS) -c include/ImGuiFileDialog/ImGuiFileDialog.cpp -o imdialog.o
+
+all: imgui-gui.cpp imgui-rend.o imgui-gfx.o imgui-general.o implot.o imdialog.o
+	$(CXX) $(LIBS) $(CXXFLAGS) -shared imgui-gui.cpp imgui-general.o imgui-gfx.o imgui-rend.o implot.o imdialog.o -o imgui-gui.so
 
 clean:
 	rm -f *.o *.so

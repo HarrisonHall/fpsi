@@ -18,10 +18,11 @@
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_glfw.h"
+
 #include "implot.h"
+#include "ImGuiFileDialog.h"
 
 #include "imgui-gui.hpp"
-
 
 #include "data/datahandler.hpp"
 #include "data/dataframe.hpp"
@@ -62,7 +63,8 @@ GLFWwindow* setup_imgui() {
 #endif
 	
 	// Generic imgui setup
-	GLFWwindow* window = glfwCreateWindow(1280, 720, "FPSI", NULL, NULL);
+	std::string window_name = std::string("FPSI [") + ::fpsi::session->get_name() + std::string("]");
+	GLFWwindow* window = glfwCreateWindow(1280, 720, window_name.c_str(), NULL, NULL);
 	if (window == nullptr)
 		return nullptr;
 	
@@ -237,6 +239,40 @@ void ImGuiGUI::session_window_event() {
 		}
 			
 		ImGui::TreePop();
+	}
+
+	// Load new plugin
+	static char plugin_name[64] = "";
+	ImGui::InputText("Plugin name", plugin_name, 64);
+	static char plugin_config[1024] = "";
+	ImGui::InputText("Plugin config (json)", plugin_config, 1024);
+	static std::string plugin_path;
+	ImGui::Text("Plugin path: %s", plugin_path.c_str());
+	ImGui::SameLine();
+	if (ImGui::Button("Choose"))
+    ImGuiFileDialog::Instance()->OpenDialog("ChoosePlugin", "Choose Plugin", ".so", ".");
+	if (ImGuiFileDialog::Instance()->Display("ChoosePlugin")) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
+			plugin_path = ImGuiFileDialog::Instance()->GetFilePathName();
+    }
+    
+    // close
+    ImGuiFileDialog::Instance()->Close();
+  }
+	//ImGui::SameLine();
+	if (ImGui::Button("Load Plugin")) {
+		util::log("Loading plugin %s from %s with config %s", plugin_name, plugin_path.c_str(), plugin_config);
+		// Load plugin
+		json plugin_info = {
+			{"path", plugin_path},
+			{"config", json::parse(plugin_config)}
+		};
+		if (::fpsi::session->load_plugin({plugin_name}, plugin_info)) {
+			// clear variables
+			memset(plugin_name, 0, 64);
+			memset(plugin_config, 0, 64);
+			plugin_path = "";
+		}
 	}
 
 	// About menu
