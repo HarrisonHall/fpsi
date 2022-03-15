@@ -36,7 +36,6 @@ public:
 private:
 	std::deque<std::shared_ptr<DataFrame>> raw_data;
   std::deque<std::shared_ptr<DataFrame>> agg_data;
-	static const size_t MAX_DATA_IN_MEMORY = 35;
 };
 
 }  // namespace fpsi

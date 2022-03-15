@@ -10,13 +10,10 @@
 #include <vector>
 #include <utility>
 
-#include "CLI11.hpp"
-#include "yaml.h"
-
+#include "config/config.hpp"
 #include "data/datahandler.hpp"
 #include "data/datasource.hpp"
 #include "plugin/plugin.hpp"
-#include "util/yaml_json.hpp"
 #include "util/logging.hpp"
 #include "util/time.hpp"
 
@@ -28,45 +25,14 @@ const size_t max_state_size = 10;
 namespace fpsi {
 
 Session::Session(int argc, char **argv) {
-  this->parse_cli(argc, argv);
-	auto config_yaml = YAML::LoadFile(this->config_path);
-	this->raw_config = util::from_yaml(config_yaml);
-
+	// Read config
+	this->config = std::make_shared<Config>(argc, argv);
+	// Set up data
 	this->data_handler = std::make_shared<DataHandler>(
-		this->get_from_config<double>("aggregations_per_second", 4.0));
+		this->config->get_aggregations_per_second());
 }
 
-void Session::parse_cli(int argc, char **argv) {
-  CLI::App app{"Aviation data and state control software with dynamic plugin system."};
 
-  bool show_version = false;
-  app.add_flag("-V,--version", show_version, "fpsi version");
-  app.add_flag("-v,--verbose", this->verbose, "show more information");
-  app.add_flag("-d,--debug", this->debug, "show debug information");
-	app.add_option("--config", this->config_path, "config file path");
-
-  try {
-    app.parse(argc, argv);
-  } catch (const CLI::ParseError &e) {
-		util::log(util::error, "Unable to parse config file.");
-    exit(app.exit(e));
-  }
-
-  if (show_version) {
-		util::log(util::raw, "fpsi 0.2");
-    exit(0);
-  }
-
-	// Ensure config file exists
-	// Quit if config does not exist
-	std::filesystem::path config_file(this->config_path);
-	if (!std::filesystem::exists(config_file)) {
-		util::log(util::error, "%s does not exist", this->config_path.c_str());
-		exit(1);
-	}
-
-  util::initialize_logging(this->verbose, this->debug);
-}
 
 Session::~Session() {
 	// Datahandler will destruct itself as a shared pointer
@@ -106,8 +72,10 @@ void Session::aggregate_data() {
 		}
 
 		// Stop tracking raw data
-		for (auto ds_name : ::fpsi::session->data_handler->get_sources()) {
-			::fpsi::session->data_handler->get_source(ds_name)->clear_raw();
+		if (this->config->should_dump_raw()) {
+			for (auto ds_name : ::fpsi::session->data_handler->get_sources()) {
+				::fpsi::session->data_handler->get_source(ds_name)->clear_raw();
+			}
 		}
 
 		// Get agg data
@@ -129,10 +97,6 @@ void Session::aggregate_data() {
 
 	// TODO - Consider in-loop to minimize active sleep //aggregate_function();
 	this->aggregate_thread = new std::thread(aggregate_function);
-}
-
-std::string Session::get_name() {
-  return raw_config.value<std::string>("name", "FPSI Default");
 }
 
 std::shared_ptr<Plugin> Session::get_plugin(const std::string &name) {
@@ -214,7 +178,7 @@ void Session::broadcast(const json &message, bool forward) {
 	json packed_message = message;
 	if (!forward) {
 		packed_message = {
-			{"from", this->get_name()},  // Mark us as sender
+			{"from", this->config->get_name()},  // Mark us as sender
 			{"timestamp", util::timestamp()},  // Give unique message id
 			{"forward", true},  // Set forwarding to true to reach all nodes
 			{"message", message}  // Embed message
@@ -247,7 +211,7 @@ void Session::receive(const json &message) {
 	std::string sender_name = message.value<std::string>("from", "");
 	size_t sender_time = message.value<size_t>("timestamp", 0);
 	bool is_name_empty = (sender_name.size() == 0);
-	bool is_from_self = (this->get_name() == sender_name);
+	bool is_from_self = (this->config->get_name() == sender_name);
 	bool has_valid_timestamp = true;
 	{
 		const std::lock_guard<std::mutex> nlock(this->node_times_lock);
@@ -292,7 +256,6 @@ void Session::receive(const json &message) {
 	
 	this->receive_thread = new std::thread(receive_function, message);
 }
-
 
 std::shared_ptr<Plugin> Session::load_plugin(const std::string &plugin_name, const json &plugin_info) {
 	static std::vector<void *> so_handles;
@@ -349,8 +312,7 @@ std::shared_ptr<Plugin> Session::load_plugin(const std::string &plugin_name, con
 bool Session::load_plugins_from_config() {
 	// Get plugins from config
 	std::vector<std::pair<std::string, json>> raw_plugins;
-  nlohmann::ordered_json config_plugins = this->raw_config.value<nlohmann::ordered_json>(
-		"plugins", nlohmann::ordered_json::object());
+  nlohmann::ordered_json config_plugins = this->config->get_plugins();
   for (const auto &plug_iter : config_plugins.items()) {
     std::string plug_name = plug_iter.key();
     json plug_info = plug_iter.value();

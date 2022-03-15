@@ -1,6 +1,6 @@
 name: "Counter Example"
 
-DEBUG: true
+debug: true
 
 plugins:
   imgui-gui:

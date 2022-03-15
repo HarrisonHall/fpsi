@@ -1,10 +1,10 @@
 LOCAL_LIBS = -I./src -I./include
 INCLUDE_LOC = -I./include/yaml-cpp/include -I./include/yaml-cpp/include/yaml-cpp -I./include/yaml-cpp/build/include -L./include/yaml-cpp/build
-INCLUDE_LIBS = -ldl
+INCLUDE_LIBS = -ldl -pthread
 LIBS = $(LOCAL_LIBS) $(INCLUDE_LOC) $(INCLUDE_LIBS)
-CXXFLAGS = -Wall -std=c++17 -pthread -Wl,--export-dynamic -Wl,--no-as-needed -g
-OPT = -Ofast  # -O3
-OBJECTS = dataframe.o datahandler.o datasource.o session.o util.o
+CXXFLAGS = -Wall -std=c++17 -Wl,--export-dynamic -Wl,--no-as-needed -g
+OPT = -Ofast
+OBJECTS = config.o dataframe.o datahandler.o datasource.o session.o util.o
 RELEASE_FLAGS = -fPIE -fPIC # -static -fstack-protector-all
 DEBUG_FLAGS = -no-pie
 
@@ -13,6 +13,9 @@ DEBUG_FLAGS = -no-pie
 all: fpsi
 
 fpsi: release
+
+config.o: src/config/config.cpp src/config/config.hpp
+	$(CXX) $(CXXFLAGS) $(LIBS) -Wall -c src/config/config.cpp -o config.o
 
 dataframe.o: src/data/dataframe.cpp src/data/dataframe.hpp
 	$(CXX) $(CXXFLAGS) $(LIBS) -Wall -c src/data/dataframe.cpp -o dataframe.o

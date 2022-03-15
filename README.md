@@ -33,17 +33,57 @@ make fpsi
 ### Examples
 `plugins/examples/` provides a few examples using the general-use plugins.
 
+### Launch Flags & Config
+The config file `config.yaml` uses the same flags as the command-line and 
+may look like the following:
+```yaml
+name: "FPSI Node Name"
+
+verbose: true
+dump-raw-after-agg: false
+
+plugins:
+	counter:
+		path: "path/to/counter.so"
+		config:
+			foo: "this goes directly to counter"
+	sqlite-db:
+		path: "path/to/sqlite-db.so"
+		config:
+			bar: 1
+			baz: 2.0
+```
+
+The following command-line help is given:
+```
+./fpsi --help
+Data and state control software with dynamic plugin system.
+Usage: ./fpsi [OPTIONS]
+
+Options:
+  -h,--help                   Print this help message and exit
+  -V,--version                fpsi version
+  -v,--verbose                show more information
+  -d,--debug                  show debug information
+  --dump-raw-after-agg        dump raw data immediately after used
+  --max-raw UINT              maximum number of raw packets tracked
+  --max-agg UINT              maximum number of aggregated packets tracked
+  --agg-per-second FLOAT      aggregations per second
+  --config TEXT               config file path
+  --node-name TEXT            name of fpsi node
+```
+
 ## Concepts
-- FPSI has a global session object
+- FPSI has a global session object which holds the public config and data_handler
 - Data is provided to the session by creating a data source and supplying raw dataframes
 - Data is aggregated at a time step and the latest aggregated frame is supplied back
   during the post-aggregation step
-- ...
+- Plugins (and nodes) can communicate via the session's broadcast and receive methods
 
 ## FAQ
 > Does this compile on windows/macos?
 
-This has only been fully tested on arch linux and raspberry pi. Likely not as-is, but 
+This has only been tested on arch linux and raspberry pi. Likely not as-is, but 
 there is nothing inherently linux-only in fpsi.
 
 > Future work?

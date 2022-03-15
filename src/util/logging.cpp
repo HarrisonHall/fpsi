@@ -7,6 +7,9 @@
 
 #include "rang.hpp"
 
+#include "session/session.hpp"
+#include "config/config.hpp"
+
 #include "logging.hpp"
 
 
@@ -20,9 +23,6 @@ static std::map<util::log_level, std::string> level_to_name = {
 
 
 namespace util {
-
-static bool log_verbose = false;
-static bool log_debug = false;
 
 bool log(log_level level, const char* message) {
   std::string file_name = "/tmp/fpsi.log";
@@ -42,11 +42,11 @@ bool log(log_level level, const char* message) {
     std::cout << rang::fg::cyan << level_to_name[level]
               << rang::bg::reset << rang::fg::reset
               << ": " << message << std::endl;
-  } else if (level == util::info && (log_verbose || log_debug)) {
+  } else if (level == util::info && (::fpsi::session->config->verbose() || ::fpsi::session->config->debug())) {
     std::cout << rang::fg::blue << level_to_name[level]
               << rang::fg::reset
               << ": " << message << std::endl;
-  } else if (level == util::debug && log_debug) {
+  } else if (level == util::debug && ::fpsi::session->config->debug()) {
     std::cout << rang::fg::green << level_to_name[level]
               << rang::fg::reset
               << ": " << message << std::endl;
@@ -77,11 +77,6 @@ bool log(const std::string &message) {
 
 bool log(const std::stringstream &ss) {
   return log(info, ss.str());
-}
-
-void initialize_logging(bool verbose, bool debug) {
-  log_verbose = verbose;
-  log_debug = debug;
 }
 
 }

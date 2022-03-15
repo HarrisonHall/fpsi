@@ -24,6 +24,7 @@
 
 #include "imgui-gui.hpp"
 
+#include "config/config.hpp"
 #include "data/datahandler.hpp"
 #include "data/dataframe.hpp"
 #include "data/datasource.hpp"
@@ -63,7 +64,7 @@ GLFWwindow* setup_imgui() {
 #endif
 	
 	// Generic imgui setup
-	std::string window_name = std::string("FPSI [") + ::fpsi::session->get_name() + std::string("]");
+	std::string window_name = std::string("FPSI [") + ::fpsi::session->config->get_name() + std::string("]");
 	GLFWwindow* window = glfwCreateWindow(1280, 720, window_name.c_str(), NULL, NULL);
 	if (window == nullptr)
 		return nullptr;

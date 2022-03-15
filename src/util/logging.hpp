@@ -1,6 +1,4 @@
-/*
-  logging.hpp
- */
+//  logging.hpp
 
 #pragma once
 
@@ -43,9 +41,7 @@ bool log(const char* message, Params &&... params) {
 }
 bool log(const std::stringstream&);
 
-void initialize_logging(bool verbose = false, bool debug = false);
-
-}
+}  // namespace util
 
 
 

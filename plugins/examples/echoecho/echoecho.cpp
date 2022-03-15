@@ -6,6 +6,7 @@
 #include <sstream>
 #include <thread>
 
+#include "config/config.hpp"
 #include "session/session.hpp"
 #include "util/logging.hpp"
 #include "util/time.hpp"
@@ -25,7 +26,7 @@ public:
 				
 				// Send message
 				std::stringstream ss;
-				ss << "Hello from " << ::fpsi::session->get_name() << "!";
+				ss << "Hello from " << ::fpsi::session->config->get_name() << "!";
 				::fpsi::session->broadcast({
 						{"message", ss.str()}
 					});

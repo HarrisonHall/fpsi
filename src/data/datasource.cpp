@@ -5,7 +5,10 @@
 #include <mutex>
 #include <string>
 
+#include "fpsi.hpp"
 #include "data/dataframe.hpp"
+#include "session/session.hpp"
+#include "config/config.hpp"
 
 #include "data/datasource.hpp"
 
@@ -35,7 +38,7 @@ void DataSource::track_raw(std::shared_ptr<DataFrame> df) {
 	const std::lock_guard<std::mutex> lock(this->raw_lock);
 	this->raw_data.push_back(df);
 	
-	while (this->raw_data.size() > this->MAX_DATA_IN_MEMORY) {
+	while (this->raw_data.size() > ::fpsi::session->config->get_max_raw_packets()) {
 		this->raw_data.pop_front();
 	}
 }
@@ -44,7 +47,7 @@ void DataSource::track_agg(std::shared_ptr<DataFrame> df) {
 	const std::lock_guard<std::mutex> lock(this->agg_lock);
 	this->agg_data.push_back(df);
 	
-	while (this->agg_data.size() > this->MAX_DATA_IN_MEMORY) {
+	while (this->agg_data.size() > ::fpsi::session->config->get_max_agg_packets()) {
 		this->agg_data.pop_front();
 	}
 }

@@ -53,6 +53,7 @@ public:
 
   void pre_aggregate(const std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> &raw_data) {
     if (raw_data.find("counter") == raw_data.end()) return;
+		if (raw_data.find("counter")->second.size() == 0) return;  // Nothing to aggregate
     auto data_packets = (*raw_data.find("counter")).second;
     double avg = 0;
     for (auto df : data_packets)

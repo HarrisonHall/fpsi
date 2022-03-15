@@ -18,20 +18,12 @@ namespace fpsi {
 
 class DataHandler;
 class Plugin;
-
+class Config;
 
 class Session {
 public:
   explicit Session(int argc, char **argv);
   ~Session();
-	
-  void parse_cli(int, char**);  // Parse CLI flags
-
-  std::string get_name();  // Get name of current fpsi node (from config)
-	template<typename T>
-	T get_from_config(const std::string &key, T default_value) {
-		return this->raw_config.value<T>(key, default_value);
-	}
 
 	std::shared_ptr<Plugin> get_plugin(const std::string &name);  // Get plugin by name
 	std::vector<std::shared_ptr<Plugin>> get_loaded_plugins();  // Get all loaded plugins
@@ -48,9 +40,9 @@ public:
 	// TODO - create method for sending to specific node
 	// Called by plugin to notify session (and other plugins) that a message was received
 	void receive(const json &message);
-	
 
   std::shared_ptr<DataHandler> data_handler;
+	std::shared_ptr<Config> config;
 
 	void aggregate_data();  // Aggregate data into new dataobjects
   void finish();  // Close threads so fpsi can exit
@@ -62,10 +54,6 @@ public:
   bool exiting = false;  // True when fpsi is exiting and threads should stop asap
   
 private:
-	nlohmann::ordered_json raw_config;  // Parsed config file (converted from yaml)
-	std::string config_path = "config.yaml";  // Path to config file
-  bool verbose = false;  // Prints verbose (info & debug) information
-  bool debug = false;  // Prints debug information
   std::map<std::string, json> states;  // Registry of state variables
 	std::mutex state_lock;  // Protect state map
   std::vector<std::shared_ptr<Plugin>> plugins;  // List of plugins running (all unique)
