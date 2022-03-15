@@ -1,5 +1,5 @@
 LOCAL_LIBS = -I./include/fpsi/src -I./include/fpsi/include
-INCLUDE_LOC = -I./include/fpsi/include/yaml-cpp/include/yaml-cpp -I./include/fpsi/include/yaml-cpp/build -L./include/fpsi/include/yaml-cpp/build
+INCLUDE_LOC = -I./include/fpsi/include/yaml-cpp/include/yaml-cpp -I./include/fpsi/include/yaml-cpp/include -I./include/fpsi/include/yaml-cpp/build -I./include/fpsi/include/yaml-cpp/build/include
 ZMQ_LIBS = -I./include/libzmq/include -lsodium -lgnutls
 LIBS = $(LOCAL_LIBS) $(INCLUDE_LOC) $(ZMQ_LIBS) -I./include
 CXXFLAGS = -std=c++17 -g

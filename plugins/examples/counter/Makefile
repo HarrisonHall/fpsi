@@ -1,5 +1,5 @@
 LOCAL_LIBS = -I./include/fpsi/src -I./include/fpsi/include
-INCLUDE_LOC = -I./include/fpsi/include/yaml-cpp/include/yaml-cpp -I./include/fpsi/include/yaml-cpp/build -L./include/fpsi/include/yaml-cpp/build
+INCLUDE_LOC = -I./include/fpsi/include/yaml-cpp/include/yaml-cpp -I./include/fpsi/include/yaml-cpp/include -I./include/fpsi/include/yaml-cpp/build/include/yaml-cpp -I./include/fpsi/include/yaml-cpp/build/include
 LIBS = $(LOCAL_LIBS) $(INCLUDE_LOC)
 IMGUI_LIBS = -I./include/fpsi/plugins/imgui-gui/include/imgui -I./include/fpsi/plugins/imgui-gui/include/implot -I./include/fpsi/plugins/imgui-gui
 

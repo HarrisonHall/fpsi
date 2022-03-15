@@ -42,9 +42,12 @@ make fpsi
 
 ## FAQ
 > Does this compile on windows/macos?
-This has only been fully tested on arch linux. Likely not as-is, but there is nothing
-inherently linux-only in fpsi.
+
+This has only been fully tested on arch linux and raspberry pi. Likely not as-is, but 
+there is nothing inherently linux-only in fpsi.
+
 > Future work?
+
 Aside from ironing out TODOs, the future work is really divided into a) making 
 general-use plugins as they are needed and b) figuring out a way to generalize the
 data/state system. In the future a version 2.0 might have allow the data/state 

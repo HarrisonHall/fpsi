@@ -9,8 +9,6 @@
 #include <memory>
 #include <mutex>
 
-#include "yaml.h"
-
 #include "fpsi.hpp"
 
 

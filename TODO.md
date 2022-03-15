@@ -1,21 +1,25 @@
 # Todo
+## Config
+- Set agg and raw size seperately
+- Add documentaiton for launch flags and config.yaml flags
+- Make clearing raw a flag
+## Plugins
+- Add bool for toggling loaded or not
+- Add READMEs for each plugin describing their configs and intended usage
 ### GUI
+- Don't render guis for unloaded plugins
 - Update session window
   - Make config viewer
-  - Add load-plugin button
 - Make state editable
 - Add communication window
 - Add log viewer
 - Add popular/useful imgui extensions
   - Markdown
-  - File viewer
-### Counter
-- Add optional gui graph/display counter
-## State
-- Add inputs to manually change state
 ### Sqlite-db
-- Track state
+- Track state correctly
 ## Misc.
-- Change how flags work so that they are processed before the config file
 - Fix `-ldl` flag on ubuntu-based systems
 - Fix/remove misc. inline TODOs
+- Create unit tests
+- Figure out if generalizing state/data system is worth it
+- Make 1.0 release

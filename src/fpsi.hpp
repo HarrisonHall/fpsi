@@ -14,7 +14,7 @@ using json = nlohmann::json; //nlohmann::json;
 
 namespace fpsi {
 
-const std::string version = "0.3";
+const std::string version = "0.4";
 const std::string author = "Harrison Hall";
 const std::string url = "https://github.com/HarrisonHall/fpsi";
 const std::string license = "MIT";
