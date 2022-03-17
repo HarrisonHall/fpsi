@@ -60,10 +60,10 @@ void Config::parse_config_map() {
 	this->verbose_printing = this->config_map.value<bool>("verbose", this->verbose_printing);
 	this->debug_printing = this->config_map.value<bool>("debug", this->debug_printing);
 	this->dump_raw_after_agg = this->config_map.value<bool>("dump-raw-after-agg", this->dump_raw_after_agg);
-	this->max_raw_packets = this->config_map.value<size_t>("max-raw-packets", this->max_raw_packets);
-	this->max_agg_packets = this->config_map.value<size_t>("max-agg-packets", this->max_agg_packets);
+	this->max_raw_packets = this->config_map.value<size_t>("max-raw", this->max_raw_packets);
+	this->max_agg_packets = this->config_map.value<size_t>("max-agg", this->max_agg_packets);
 	this->aggregations_per_second = this->config_map.value<double>("aggregations-per-second", this->aggregations_per_second);
-	this->node_name = this->config_map.value<std::string>("name", this->node_name);
+	this->node_name = this->config_map.value<std::string>("name", this->node_name);	
 }
 
 std::string Config::get_name() const {

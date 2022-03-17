@@ -1,8 +1,4 @@
 # Todo
-## Config
-- Set agg and raw size seperately
-- Add documentation for launch flags and config.yaml flags
-- Make clearing raw a flag
 ## Plugins
 - Add bool for toggling loaded or not
 - Add READMEs for each plugin describing their configs and intended usage
@@ -15,8 +11,6 @@
 - Add log viewer
 - Add popular/useful imgui extensions
   - Markdown
-### Sqlite-db
-- Track state correctly
 ## Misc.
 - Fix/remove misc. inline TODOs
 - Create unit tests

@@ -9,7 +9,7 @@ plugins:
   sqlite-db:
     path: "include/fpsi/plugins/sqlite-db/sqlite-db.so"
     config:
-      db_path: ":memory:"
+      db_path: "/tmp/fpsi.sqlite"
   counter:
     path: "counter.so"
     config: {}

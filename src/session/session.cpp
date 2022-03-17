@@ -127,40 +127,55 @@ const json Session::get_state(std::string key) {
   return json(json::value_t::object);;
 }
 
-void Session::set_state(std::string key, const json &new_value) {
+void Session::set_state(const std::string key, const json &new_value) {
 	if (this->exiting) return;  // Don't create threads if closing
-	static std::mutex set_state_lock;
-	const std::lock_guard<std::mutex> sslock(set_state_lock);
-
-  if (state_thread) {
-    if (state_thread->joinable()) {
-      state_thread->join();
-      delete state_thread;
-    }
-  }
+	static std::mutex set_state_lock;  // Protect setting actual states
+	static std::vector<std::pair<std::string, json>> state_queue;  // State-change queue
+	static std::mutex state_queue_lock;  // Protect state-change queue
 	
-  json last_value = this->get_state(key);
+	// Add current values to queue
 	{
-		std::lock_guard<std::mutex> slock(this->state_lock);
-		this->states[key] = new_value;
+		const std::lock_guard<std::mutex> sqlock(state_queue_lock);
+		state_queue.push_back(std::make_pair(key, new_value));
 	}
 
-	static auto change_state_function = [this](const std::string key, const json last_value, const json next_value) {
+	// Function to notify each plugin of state change
+	static auto change_state_function = [this](auto state_queue) {
 		auto plugins = this->get_loaded_plugins();
-		std::vector<std::thread *> threads;
-		// Call state_change for each plugin
-		for (auto plugin : plugins) {
-			threads.push_back(new std::thread(&Plugin::state_change, plugin.get(), key, last_value, next_value));
+		for (const auto &[key, next_value] : state_queue) {
+			const auto last_value = this->get_state(key);  // Get last value
+			{
+				std::lock_guard<std::mutex> slock(this->state_lock);
+				this->states[key] = next_value;  // Set to new value
+			}
+			// Call state_change for each plugin
+			std::vector<std::thread *> threads;
+			for (auto plugin : plugins) {
+				threads.push_back(new std::thread(&Plugin::state_change, plugin.get(), key, last_value, next_value));
+			}
+			// Close threads
+			for (auto thread : threads) {
+				thread->join();
+				delete thread;
+			}
 		}
-		// Close threads
-		for (auto thread : threads) {
-			thread->join();
-			delete thread;
-		}
+		set_state_lock.unlock();  // Unlock when finished
 	};
 
-	// TODO - make fpsi sqlite-db track/restore state
-  this->state_thread = new std::thread(change_state_function, key, last_value, new_value);
+	// If state thread is not running, go ahead and run thread
+	if (set_state_lock.try_lock()) {
+		// Join last thread
+		if (this->state_thread) {
+			if (this->state_thread->joinable()) {
+				this->state_thread->join();
+				delete this->state_thread;
+			}
+		}
+		// Start update thread
+		const std::lock_guard<std::mutex> sqlock(state_queue_lock);
+		this->state_thread = new std::thread(change_state_function, state_queue);
+		state_queue.clear();
+	}
 }
 
 void Session::broadcast(const json &message, bool forward) {
@@ -301,7 +316,6 @@ std::shared_ptr<Plugin> Session::load_plugin(const std::string &plugin_name, con
 	// Track plugin
 	{
 		const std::lock_guard<std::mutex> plock(this->plugin_lock);
-		util::log(util::debug, "got lock");
 		this->plugins.push_back(std::shared_ptr<Plugin>(new_plugin));
 		so_handles.push_back(so_handle);  // Track handle - TODO - in the future consider unloading these at unload
 	}

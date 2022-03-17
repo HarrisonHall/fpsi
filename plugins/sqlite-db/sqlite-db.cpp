@@ -12,9 +12,10 @@
 
 #include "sqlite3.h"
 
-#include "fpsi/src/session/session.hpp"
-#include "fpsi/src/data/datahandler.hpp"
-#include "fpsi/src/util/logging.hpp"
+#include "session/session.hpp"
+#include "data/datahandler.hpp"
+#include "util/logging.hpp"
+#include "util/time.hpp"
 
 
 namespace fpsi {
@@ -31,37 +32,17 @@ public:
 		// Set up database
 		sqlite3_stmt *statement;
 		int failed = 0;
+		int row_cursor = 0;
 		failed = sqlite3_open(db_path.c_str(), &this->db);
 		if (failed) {
 			this->db = nullptr;
 			return;
 		}
 
-		// Ensure dataframes table exists
-		std::string check_table = "SELECT name FROM sqlite_master WHERE name ='dataframes' and type='table'";
-		bool table_exists = false;
-		int row_cursor = 0;
-		failed = sqlite3_prepare_v2(this->db, check_table.c_str(), check_table.size(), &statement, NULL);
-		row_cursor = sqlite3_step(statement);
-		while (row_cursor == SQLITE_ROW) {
-			const char *name = reinterpret_cast<const char *>(sqlite3_column_text(statement, 0));
-			table_exists = !strncmp(name, "dataframes", 15);
-			row_cursor = sqlite3_step(statement);
-		}
-		sqlite3_finalize(statement);
+		this->set_up_dataframes_table();
+		this->set_up_states_table();
 
-		if (!table_exists) {
-			std::string create_table = 
-				"CREATE TABLE dataframes"
-				"(df_id INTEGER PRIMARY KEY AUTOINCREMENT, "
-				"df_source TEXT, df_type TEXT, df_data BLOB, df_time TEXT)";
-			failed = sqlite3_exec(this->db, create_table.c_str(), NULL, NULL, NULL);
-			util::log(util::debug, "Created table dataframes");
-		} else {
-			util::log(util::debug, "dataframes table exists");
-		}
-
-		// Read intial data
+		// Read initial data
 		for (const auto &packet_type : {"agg", "stt"}) {
 			std::vector<std::string> packet_sources;
 			std::string get_sources = "SELECT DISTINCT df_source FROM dataframes";
@@ -112,8 +93,6 @@ public:
 						::fpsi::session->data_handler->create_raw(df);
 					} else if (df_type == "agg") {
 						::fpsi::session->data_handler->create_agg(df);
-					} else if (df_type == "state") {
-						::fpsi::session->data_handler->create_stt(df);
 					} else {
 						util::log(util::warning, "Invalid dataframe type: %s (id=%d)", df_type.c_str(), df_id);
 					}
@@ -123,6 +102,50 @@ public:
 				sqlite3_finalize(statement);
 			}
 			
+		}
+
+		// Get initial states
+		{
+			// Get unique states
+			std::vector<std::string> unique_states;
+			std::string get_states = "SELECT DISTINCT state_key FROM states";
+			failed = sqlite3_prepare_v2(this->db, get_states.c_str(), get_states.size(), &statement, NULL);
+			row_cursor = sqlite3_step(statement);
+			while (row_cursor == SQLITE_ROW) {
+				unique_states.push_back(reinterpret_cast<const char*>(sqlite3_column_text(statement, 0)));
+				row_cursor = sqlite3_step(statement);  // Advance
+			}
+			sqlite3_finalize(statement);
+
+			// Bring back each state
+			for (const std::string &state_key : unique_states) {
+				std::string get_state =
+					"SELECT * FROM states where state_key = ? "
+					"ORDER BY datetime(state_time) DESC LIMIT 1";
+				failed = sqlite3_prepare_v2(this->db, get_state.c_str(), get_state.size(), &statement, NULL);
+				
+				// Bind vars
+				failed = sqlite3_bind_text(statement, 1, state_key.c_str(), -1, SQLITE_TRANSIENT);
+				assert(("Failed to bind state key", failed == SQLITE_OK));
+
+				row_cursor = sqlite3_step(statement);
+				assert(row_cursor == SQLITE_ROW);
+				// Read columns
+				size_t state_id = sqlite3_column_int(statement, 0);
+				std::string _state_key(reinterpret_cast<const char*>(sqlite3_column_text(statement, 1)));
+				const void *bson_data = sqlite3_column_blob(statement, 2);
+				int bson_len = sqlite3_column_bytes(statement, 2);
+				std::vector<std::uint8_t> v_bson(bson_len);
+				memcpy(v_bson.data(), bson_data, bson_len);
+				json state_data = json::from_bson(v_bson);
+				std::string state_time(reinterpret_cast<const char*>(sqlite3_column_text(statement, 3)));
+
+				// TODO - only insert older states if they fit within a recent timeframe
+				util::log(util::debug, "Restoring state %s to %s", state_key.c_str(), state_data.dump().c_str());
+				::fpsi::session->set_state(state_key, state_data);
+				
+				sqlite3_finalize(statement);
+			}
 		}
   }
 
@@ -143,6 +166,34 @@ public:
 		for (auto [source_name, df] : agg_data)
 			this->update_df(df);
   }
+
+	// Called when a state changes (from ::fpsi::session->set_state(...))
+  virtual void state_change(const std::string &key, const json &last, const json &next) {
+		std::string insert_state =
+			"INSERT INTO states(state_key, state_data, state_time) "
+			"VALUES(?, ?, ?)";
+		sqlite3_stmt *statement;
+		int failed = sqlite3_prepare_v2(this->db, insert_state.c_str(), insert_state.size(), &statement, NULL);
+		
+		// Bind vars
+		failed = sqlite3_bind_text(statement, 1, key.c_str(), -1, SQLITE_TRANSIENT);
+		assert(("Failed to bind state_key", failed == SQLITE_OK));
+
+		auto state_data = json::to_bson(next);
+		failed = sqlite3_bind_blob(statement, 2, state_data.data(), state_data.size(), SQLITE_TRANSIENT);
+		assert(("Failed to bind blob", failed == SQLITE_OK));
+		auto state_time = util::to_time_str(util::timestamp());
+		failed = sqlite3_bind_text(statement, 3, state_time.c_str(), -1, SQLITE_TRANSIENT);
+		assert(("Failed to bind time", failed == SQLITE_OK));
+		
+		// Exec
+		failed = sqlite3_step(statement);
+		assert(("sqlite insert is a single operation", failed = SQLITE_DONE));
+		sqlite3_finalize(statement);
+	}
+
+private:
+	sqlite3 *db = nullptr;
 
 	void update_df(std::shared_ptr<DataFrame> df) {
 		const std::string sqlite_name = this->name;
@@ -207,8 +258,61 @@ public:
 		df->add_destructor_callback(update_in_db);
 	}
 
-private:
-	sqlite3 *db = nullptr;
+	void set_up_dataframes_table() {
+		sqlite3_stmt *statement;
+		int failed = 0;
+		// Ensure dataframes table exists
+		std::string check_table = "SELECT name FROM sqlite_master WHERE name ='dataframes' and type='table'";
+		bool table_exists = false;
+		int row_cursor = 0;
+		failed = sqlite3_prepare_v2(this->db, check_table.c_str(), check_table.size(), &statement, NULL);
+		row_cursor = sqlite3_step(statement);
+		while (row_cursor == SQLITE_ROW) {
+			const char *name = reinterpret_cast<const char *>(sqlite3_column_text(statement, 0));
+			table_exists = !strncmp(name, "dataframes", 15);
+			row_cursor = sqlite3_step(statement);
+		}
+		sqlite3_finalize(statement);
+
+		if (!table_exists) {
+			std::string create_table = 
+				"CREATE TABLE dataframes"
+				"(df_id INTEGER PRIMARY KEY AUTOINCREMENT, "
+				"df_source TEXT, df_type TEXT, df_data BLOB, df_time TEXT)";
+			failed = sqlite3_exec(this->db, create_table.c_str(), NULL, NULL, NULL);
+			util::log(util::debug, "Created table dataframes");
+		} else {
+			util::log(util::debug, "dataframes table exists");
+		}
+	}
+
+	void set_up_states_table() {
+		sqlite3_stmt *statement;
+		int failed = 0;
+		// Ensure dataframes table exists
+		std::string check_table = "SELECT name FROM sqlite_master WHERE name ='states' and type='table'";
+		bool table_exists = false;
+		int row_cursor = 0;
+		failed = sqlite3_prepare_v2(this->db, check_table.c_str(), check_table.size(), &statement, NULL);
+		row_cursor = sqlite3_step(statement);
+		while (row_cursor == SQLITE_ROW) {
+			const char *name = reinterpret_cast<const char *>(sqlite3_column_text(statement, 0));
+			table_exists = !strncmp(name, "states", 6);
+			row_cursor = sqlite3_step(statement);
+		}
+		sqlite3_finalize(statement);
+
+		if (!table_exists) {
+			std::string create_table = 
+				"CREATE TABLE states "
+				"(state_id INTEGER PRIMARY KEY AUTOINCREMENT, "
+				"state_key TEXT, state_data BLOB, state_time TEXT)";
+			failed = sqlite3_exec(this->db, create_table.c_str(), NULL, NULL, NULL);
+			util::log(util::debug, "Created table states");
+		} else {
+			util::log(util::debug, "states table exists");
+		}
+	}
   
 };
 

@@ -39,14 +39,9 @@ DataFrame::DataFrame(
 }
 
 DataFrame::~DataFrame() {
-  util::log(util::debug, "DataFrame w/ id %d calling callbacks", this->id);
 	for (const auto &callback : this->destructor_callbacks) {
 		callback(this);
 	}
-	/*
-  if (this->session)
-    this->session->data_handler->update_data_frame(*this);
-	*/
 }
 
 void DataFrame::add_destructor_callback(const std::function<void(DataFrame *)> &callback) {

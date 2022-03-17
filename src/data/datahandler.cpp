@@ -45,9 +45,7 @@ std::shared_ptr<DataFrame> DataHandler::create_raw(const std::string &source, co
     -1, source, "raw", data
   );
   df->set_time(util::to_time_str(util::timestamp()));
-  //df->set_id(this->db.insert(*df.get()));  // push into db  // TODO - hook?
   this->data_sources[source]->track_raw(df);  // track it
-  util::log("Created raw with id %d", df->get_id());
 
   return df;
 }
@@ -64,7 +62,6 @@ std::shared_ptr<DataFrame> DataHandler::create_raw(std::shared_ptr<DataFrame> df
 
 std::shared_ptr<DataFrame> DataHandler::create_agg(const std::string &source, const json &data) {
 	if (this->closed) return nullptr;
-  util::log(util::debug, "Creating agg");
   if (this->data_sources.find(source) == this->data_sources.end())
     return std::shared_ptr<DataFrame>(nullptr);
 
@@ -83,26 +80,6 @@ std::shared_ptr<DataFrame> DataHandler::create_agg(std::shared_ptr<DataFrame> df
 
   df->set_type("agg");
 	this->data_sources[df->get_source()]->track_agg(df);  // Track it
-  return df;
-}
-
-std::shared_ptr<DataFrame> DataHandler::create_stt(const std::string &source, const json &data) {
-	if (this->closed) return nullptr;
-  std::shared_ptr<DataFrame> df = std::make_shared<DataFrame>(
-    -1, source, "stt", data
-  );
-  df->set_time(util::to_time_str(util::timestamp()));
-  //df->set_id(this->db.insert(*df.get()));  // push into db // TODO -hook?
-
-  return df;
-}
-std::shared_ptr<DataFrame> DataHandler::create_stt(std::shared_ptr<DataFrame> df) {
-	if (this->closed) return nullptr;
-  if (this->data_sources.find(df->get_source()) == this->data_sources.end())
-    return std::shared_ptr<DataFrame>(nullptr);
-
-  df->set_type("stt");
-  //this->data_sources[df->get_source()]->raw_data.push_back(df);  // TODO
   return df;
 }
 

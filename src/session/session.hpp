@@ -31,7 +31,7 @@ public:
 	bool load_plugins_from_config();
 	bool unload_plugin(const std::string &name);
 
-  void set_state(std::string, const json &);  // Set state in state-registry
+  void set_state(std::string, const json &);  // Queue set state in state-registry, nonblocking to prevent deadlock
   const json get_state(std::string);  // Get state from state-registry
 	std::vector<std::string> get_state_keys();
 
