@@ -315,7 +315,7 @@ std::shared_ptr<Plugin> Session::load_plugin(const std::string &plugin_name, con
   acq = (Plugin *(*)(const std::string &, const std::string &, const json &))acquire_func;
 
 	// Load plugin
-  Plugin *new_plugin = acq(plugin_name, real_plugin_location, plugin_info.value<json>("config", json::object()));
+  Plugin *new_plugin = acq(plugin_name, real_plugin_location, plugin_info.value<json>("config", json(json::value_t::object)));
   if (!new_plugin) {
     util::log(util::warning, "Unable to initialize plugin object for %s", plugin_name.c_str());
     return nullptr;

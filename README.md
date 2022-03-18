@@ -5,6 +5,8 @@ filtering, managing states, and communication. A plugin framework is also
 provided (and strictly necessary for nontrivial usage) so that users can
 dynamically modify and add features to FPSI.
 
+![gui usage example](docs/media/srock_example.png)
+
 FPSI was designed abstract so I could use it for a couple of personal projects.
 It is hard to know just what FPSI can be used for without an example. When one
 of my projects are sufficiently developed I will link it here.
@@ -93,3 +95,10 @@ general-use plugins as they are needed and b) figuring out a way to generalize t
 data/state system. In the future a version 2.0 might have allow the data/state 
 system to be abstracted into plugins, but the current implementation works for now.
 Otherwise, there is certainly room for optimization.
+
+> GUI?
+
+FPSI works completely without the gui. The gui is a plugin that is useful when
+fpsi is ran locally or is used to manage data from other nodes. The gui was
+originally baked into full builds and used gtk, but has since switched to being
+embedded inside a plugin using dear imgui.

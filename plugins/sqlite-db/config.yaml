@@ -6,5 +6,4 @@ plugins:
   sqlite-db:
     path: "sqlite-db.so"
     config:
-      db_path: "/tmp/fpsi.sqlite"
-      #db_path: ":memory:"
+      db-path: "/tmp/fpsi.sqlite"

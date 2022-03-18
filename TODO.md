@@ -1,8 +1,8 @@
 # Todo
 ## Plugins
-- Add bool for toggling loaded or not
-- Add READMEs for each plugin describing their configs and intended usage
+- Fix empty configs having null plugin configs
 ### GUI
+- Make all other windows toggle via the session window
 - Don't render guis for unloaded plugins
 - Update session window
   - Make config viewer
@@ -15,4 +15,3 @@
 - Fix/remove misc. inline TODOs
 - Create unit tests
 - Figure out if generalizing state/data system is worth it
-- Make 1.0 release
