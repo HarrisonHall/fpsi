@@ -14,14 +14,14 @@
 
 namespace util {
 
-unsigned long long timestamp() {
+size_t timestamp() {
   return std::chrono::duration_cast<std::chrono::milliseconds>(
     std::chrono::system_clock::now().time_since_epoch()
     ).count();
 }
 
 // UTC
-unsigned long long parse_time_str(std::string s) {
+size_t parse_time_str(const std::string &s) {
   std::stringstream is;
   is << s;
 
@@ -42,14 +42,14 @@ unsigned long long parse_time_str(std::string s) {
   ).count();
 }
 
-std::string to_time_str(unsigned long long timestamp) {
+std::string to_time_str(const size_t timestamp) {
   auto t = std::chrono::milliseconds(timestamp);
   auto tp = std::chrono::time_point<std::chrono::system_clock>(t);
   return date::format("%FT%TZ", date::floor<std::chrono::milliseconds>(tp));
 }
 
 // Sleep for a given time as accurately as possible
-void active_sleep(uint32_t ms) {
+void active_sleep(const uint32_t ms) {
   struct timespec ts;
   ts.tv_sec = ms / 1000;
   ts.tv_nsec = ms % 1000 * 1000000;
@@ -58,7 +58,7 @@ void active_sleep(uint32_t ms) {
 }
 
 // Sleep only the amount of time necessary in excess since last call
-void active_sleep_since_last(uint32_t ms) {
+void active_sleep_since_last(const uint32_t ms) {
 	static auto last_time = std::chrono::high_resolution_clock::now();
 	auto this_time = std::chrono::high_resolution_clock::now();
 	auto time_since_ms =  std::chrono::duration_cast<std::chrono::milliseconds>(this_time - last_time).count();

@@ -7,7 +7,6 @@
 #include "fpsi.hpp"
 
 
-
 namespace fpsi {
 
 class Config {

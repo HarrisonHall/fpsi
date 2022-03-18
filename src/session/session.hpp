@@ -1,5 +1,4 @@
 // FPSI Session
-// TODO - this interface needs to be cleaned up
 
 #pragma once
 
@@ -27,22 +26,21 @@ public:
 
 	std::shared_ptr<Plugin> get_plugin(const std::string &name);  // Get plugin by name
 	std::vector<std::shared_ptr<Plugin>> get_loaded_plugins();  // Get all loaded plugins
-	std::shared_ptr<Plugin> load_plugin(const std::string &plugin_name, const json &plugin_info);
-	bool load_plugins_from_config();
-	bool unload_plugin(const std::string &name);
+	std::shared_ptr<Plugin> load_plugin(const std::string &plugin_name, const json &plugin_info);  // Load individual plugin
+	bool load_plugins_from_config();  // Load all plugins from config
+	bool unload_plugin(const std::string &name);  // Unload a loaded plugin
 
   void set_state(std::string, const json &);  // Queue set state in state-registry, nonblocking to prevent deadlock
   const json get_state(std::string);  // Get state from state-registry
-	std::vector<std::string> get_state_keys();
+	std::vector<std::string> get_state_keys();  // Get all individual state keys
 
-	// Send message to all connected nodes
-	void broadcast(const json &message, bool forward = false);
+	
+	void broadcast(const json &message, bool forward = false);  // Send message to all connected nodes
 	// TODO - create method for sending to specific node
-	// Called by plugin to notify session (and other plugins) that a message was received
-	void receive(const json &message);
+	void receive(const json &message);  // Called by plugin to notify session (and other plugins) that a message was received
 
-  std::shared_ptr<DataHandler> data_handler;
-	std::shared_ptr<Config> config;
+  std::shared_ptr<DataHandler> data_handler;  // Access global data
+	std::shared_ptr<Config> config;  // Access global config
 
 	void aggregate_data();  // Aggregate data into new dataobjects
   void finish();  // Close threads so fpsi can exit

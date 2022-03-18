@@ -36,7 +36,15 @@ Session::Session(int argc, char **argv) {
 
 Session::~Session() {
 	// Datahandler will destruct itself as a shared pointer
-	// Plugins are automatically killed properly as shared pointers
+	// Plugins are automatically killed properly as shared pointers, but we should
+	// call unload anyway
+	{
+		auto plugins = this->get_loaded_plugins();
+		for (auto plugin : plugins) {
+			this->unload_plugin(plugin->name);
+		}
+	}
+	
 }
 
 void Session::aggregate_data() {
@@ -355,6 +363,7 @@ bool Session::unload_plugin(const std::string &name) {
 	if (!found_plugin) return false;
 
 	// Get rid of plugin (or rather, stop tracking it)
+	found_plugin->unload();
 	this->plugins.erase(std::find(this->plugins.begin(), this->plugins.end(), found_plugin));
 	// Plugin should naturally deconstruct after this return and every other
 	// plugin referencing it also dies

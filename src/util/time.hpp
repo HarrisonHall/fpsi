@@ -1,22 +1,20 @@
-/*
-  time.hpp
- */
+// time.hpp
 
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 
 namespace util {
 
-unsigned long long timestamp();
+size_t timestamp();  // Get timestamp
 
-// UTC
-unsigned long long parse_time_str(std::string s);
+size_t parse_time_str(const std::string &s);  // Get UTC timestamp
 
-std::string to_time_str(unsigned long long timestamp);
+std::string to_time_str(const size_t timestamp);
 
-void active_sleep(uint32_t ms);
-void active_sleep_since_last(uint32_t ms);
+void active_sleep(const uint32_t ms);
+void active_sleep_since_last(const uint32_t ms);
 
 }  // namespace util
