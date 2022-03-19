@@ -45,15 +45,14 @@ verbose: true
 dump-raw-after-agg: false
 
 plugins:
-	counter:
-		path: "path/to/counter.so"
-		config:
-			foo: "this goes directly to counter"
-	sqlite-db:
-		path: "path/to/sqlite-db.so"
-		config:
-			bar: 1
-			baz: 2.0
+  counter:
+    path: "path/to/counter.so"
+    config:
+      foo: "this goes directly to counter"
+  sqlite-db:
+    path: "path/to/sqlite-db.so"
+    config:
+      db-path: ":memory:"
 ```
 
 The following command-line help is given:
