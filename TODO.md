@@ -1,4 +1,6 @@
 # Todo
+## Features
+- Add `--pack <filename>` flag to pack plugins and config into single executable
 ## Plugins
 - Fix empty configs having null plugin configs
 ### GUI

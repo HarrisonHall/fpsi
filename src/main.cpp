@@ -6,8 +6,6 @@
 #include <iostream>
 #include <unistd.h>
 
-#include "yaml.h"
-
 #include "fpsi.hpp"
 #include "config/config.hpp"
 #include "session/session.hpp"
