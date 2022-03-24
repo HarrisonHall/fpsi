@@ -1,11 +1,17 @@
-/fpsi
-/test
-
+# development
 *~
 *#
+/test
+
+# building
 *.o
 *.so
+build
+/fpsi
 
 # plugin-related
 *.sqlite
 imgui.ini
+
+# debugging
+valgrind-out.txt

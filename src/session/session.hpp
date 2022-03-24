@@ -45,10 +45,10 @@ public:
 	void aggregate_data();  // Aggregate data into new dataobjects
   void finish();  // Close threads so fpsi can exit
 
-  std::thread *aggregate_thread = nullptr;
-  std::thread *state_thread = nullptr;
-	std::thread *broadcast_thread = nullptr;
-	std::thread *receive_thread = nullptr;
+  std::thread aggregate_thread;
+  std::thread state_thread;
+	std::thread broadcast_thread;
+	std::thread receive_thread;
   bool exiting = false;  // True when fpsi is exiting and threads should stop asap
   
 private:

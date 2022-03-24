@@ -28,7 +28,7 @@ public:
   Counter(const std::string &plugin_name, const std::string &plugin_path, const json &plugin_config) :
 		Plugin(plugin_name, plugin_path, plugin_config) {
 		::fpsi::session->data_handler->create_data_source("counter");
-    counter_thread = new std::thread(&Counter::count, this);
+    this->counter_thread = std::thread(&Counter::count, this);
     ::fpsi::session->set_state("counter_level", {{"level", 0}});
 
 #ifdef GUI
@@ -48,7 +48,8 @@ public:
 
   ~Counter() {
     this->die = true;
-    if (counter_thread) counter_thread->join();
+		if (this->counter_thread.joinable())
+			this->counter_thread.join();
   }
 
   void pre_aggregate(const std::map<std::string, std::vector<std::shared_ptr<DataFrame>>> &raw_data) {
@@ -120,7 +121,7 @@ public:
 #endif
 
 private:
-  std::thread *counter_thread;
+  std::thread counter_thread;
   bool die = false;
   size_t value = 0;
   json base_packet = {

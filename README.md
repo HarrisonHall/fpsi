@@ -22,7 +22,7 @@ cd include/yaml-cpp
 mkdir build
 cd build
 cmake ..
-make
+make yaml-cpp
 cd ../..
 
 # Build fpsi

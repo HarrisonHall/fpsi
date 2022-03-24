@@ -52,12 +52,8 @@ void Session::aggregate_data() {
 	static std::mutex aggregate_lock;
 	const std::lock_guard<std::mutex> alock(aggregate_lock);
 	
-	if (this->aggregate_thread) {
-    if (this->aggregate_thread->joinable()) {
-      this->aggregate_thread->join();
-      delete this->aggregate_thread;
-    }
-  }
+	if (this->aggregate_thread.joinable())
+		this->aggregate_thread.join();
 
 	static auto aggregate_function = [this]() {
 		auto plugins = this->get_loaded_plugins();
@@ -103,8 +99,8 @@ void Session::aggregate_data() {
 		}
 	};
 
-	// TODO - Consider in-loop to minimize active sleep //aggregate_function();
-	this->aggregate_thread = new std::thread(aggregate_function);
+	// TODO - Consider in-loop to minimize active sleep
+	this->aggregate_thread = std::thread(aggregate_function);
 }
 
 std::shared_ptr<Plugin> Session::get_plugin(const std::string &name) {
@@ -173,15 +169,11 @@ void Session::set_state(const std::string key, const json &new_value) {
 	// If state thread is not running, go ahead and run thread
 	if (set_state_lock.try_lock()) {
 		// Join last thread
-		if (this->state_thread) {
-			if (this->state_thread->joinable()) {
-				this->state_thread->join();
-				delete this->state_thread;
-			}
-		}
+		if (this->state_thread.joinable())
+			this->state_thread.join();
 		// Start update thread
 		const std::lock_guard<std::mutex> sqlock(state_queue_lock);
-		this->state_thread = new std::thread(change_state_function, state_queue);
+		this->state_thread = std::thread(change_state_function, state_queue);
 		state_queue.clear();
 	}
 }
@@ -191,13 +183,9 @@ void Session::broadcast(const json &message, bool forward) {
 	static std::mutex broadcast_lock;
 	const std::lock_guard<std::mutex> block(broadcast_lock);
 	
-	if (broadcast_thread) {
-    if (broadcast_thread->joinable()) {
-      broadcast_thread->join();
-      delete broadcast_thread;
-    }
-  }
-
+	if (this->broadcast_thread.joinable())
+		broadcast_thread.join();
+	
 	json packed_message = message;
 	if (!forward) {
 		packed_message = {
@@ -222,7 +210,7 @@ void Session::broadcast(const json &message, bool forward) {
 		}
 	};
 
-	this->broadcast_thread = new std::thread(broadcast_function, packed_message);
+	this->broadcast_thread = std::thread(broadcast_function, packed_message);
 }
 
 void Session::receive(const json &message) {
@@ -248,12 +236,8 @@ void Session::receive(const json &message) {
 		return;
 	}
 	
-	if (receive_thread) {
-    if (receive_thread->joinable()) {
-      receive_thread->join();
-      delete receive_thread;
-    }
-  }
+	if (this->receive_thread.joinable())
+		this->receive_thread.join();
 
 	static auto receive_function = [this](const json message) {
 		auto plugins = this->get_loaded_plugins();
@@ -277,11 +261,11 @@ void Session::receive(const json &message) {
 		this->node_times[sender_name] = sender_time;
 	}
 	
-	this->receive_thread = new std::thread(receive_function, message);
+	this->receive_thread = std::thread(receive_function, message);
 }
 
 std::shared_ptr<Plugin> Session::load_plugin(const std::string &plugin_name, const json &plugin_info) {
-	static std::vector<void *> so_handles;
+	static std::vector<void *> so_handles;  // TODO - figure out what to do with these
 
 	// Ensure plugin actually exists
 	std::string plugin_file = plugin_info.value<std::string>("path", "");
@@ -340,7 +324,7 @@ bool Session::load_plugins_from_config() {
     json plug_info = plug_iter.value();
     raw_plugins.push_back(std::make_pair(plug_name, plug_info));
   }
-
+	
 	// Load plugins
 	for (const auto &plug_info : raw_plugins) {
 		auto plugin_name = plug_info.first;
@@ -385,28 +369,24 @@ void Session::finish() {
   this->exiting = true;
 
 	util::log(util::debug, "Killing recv");
-	if (receive_thread)
-    if (receive_thread->joinable())
-      receive_thread->join();
+	if (this->receive_thread.joinable())
+		this->receive_thread.join();
 
 	util::log(util::debug, "Killing broadcast");
-	if (broadcast_thread)
-    if (broadcast_thread->joinable())
-      broadcast_thread->join();
+	if (this->broadcast_thread.joinable())
+		this->broadcast_thread.join();
 
   util::log(util::debug, "Killing agg");
-  if (aggregate_thread)
-    if (aggregate_thread->joinable())
-      aggregate_thread->join();
+	if (this->aggregate_thread.joinable())
+		this->aggregate_thread.join();
 
   util::log(util::debug, "Killing state");
-  if (state_thread)
-    if (state_thread->joinable())
-      state_thread->join();
-
+	if (this->state_thread.joinable())
+		this->state_thread.join();
+	
 	this->data_handler->close_data_sources();  // Dump data before killing plugins
 
   util::log("Finished");
 }
 
-}
+}  // namespace fpsi
