@@ -16,3 +16,6 @@
 [submodule "plugins/imgui-gui/include/ImGuiFileDialog"]
 	path = plugins/imgui-gui/include/ImGuiFileDialog
 	url = https://github.com/aiekick/ImGuiFileDialog
+[submodule "plugins/usb-radio/include/SoapySDR"]
+	path = plugins/usb-radio/include/SoapySDR
+	url = https://github.com/pothosware/SoapySDR

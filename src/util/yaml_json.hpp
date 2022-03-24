@@ -7,7 +7,7 @@
 
 #if __has_include("yaml.h")
 #include "yaml.h"
-#elif __has_include("yaml-cpp/yaml.h")
+#elif __has_include(<yaml-cpp/yaml.h>)
 #include <yaml-cpp/yaml.h>
 #else
 #error "yaml-cpp has not been built locally or is not installed on system"
