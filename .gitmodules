@@ -19,3 +19,6 @@
 [submodule "plugins/usb-radio/include/SoapySDR"]
 	path = plugins/usb-radio/include/SoapySDR
 	url = https://github.com/pothosware/SoapySDR
+[submodule "plugins/sqlite-db/include/sqlite"]
+	path = plugins/sqlite-db/include/sqlite
+	url = https://github.com/sqlite/sqlite
