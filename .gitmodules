@@ -22,3 +22,6 @@
 [submodule "plugins/sqlite-db/include/sqlite"]
 	path = plugins/sqlite-db/include/sqlite
 	url = https://github.com/sqlite/sqlite
+[submodule "plugins/imgui-gui/include/imgui_markdown"]
+	path = plugins/imgui-gui/include/imgui_markdown
+	url = https://github.com/juliettef/imgui_markdown

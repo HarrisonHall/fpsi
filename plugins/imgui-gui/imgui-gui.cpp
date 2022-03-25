@@ -7,13 +7,14 @@
 #define IMGUIGUICPP
 
 #include <cassert>
+#include <cstdio>
 #include <cstring>
 #include <deque>
 #include <iostream>
-#include <unistd.h>
-#include <cstdio>
+#include <sstream>
 #include <string>
 #include <thread>
+#include <unistd.h>
 
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 #include "imgui_impl_opengl3.h"
@@ -21,6 +22,7 @@
 
 #include "implot.h"
 #include "ImGuiFileDialog.h"
+#include "imgui_markdown.h"
 
 #include "imgui-gui.hpp"
 
@@ -384,15 +386,25 @@ void ImGuiGUI::state_window_event() {
 
 void ImGuiGUI::about_window() {
 	if (!this->show_about_window) return;
+
+	// Generate about message
+	static const ImGui::MarkdownConfig mdConfig{};
+	static std::string about_message_md;
+	// Initialize
+	if (about_message_md.size() == 0) {
+		std::stringstream about_message;
+		about_message << "# FPSI" << "\n";
+		about_message << "Data and state control software with dynamic plugin support for use with single or multi-node systems." << "\n";
+		about_message << "* Version: " << ::fpsi::version << "\n";
+		about_message << "* Create by " << ::fpsi::author << "\n";
+		about_message << "* [" << ::fpsi::url << "](" << ::fpsi::url << ")" << "\n";
+		about_message << "* Under " << ::fpsi::license << " license" << "\n";
+		about_message_md = about_message.str();
+	}
 	
 	ImGui::Begin("About");
-
-	ImGui::Text("FPSI");
-	ImGui::Text("Data and state control software with dynamic plugin support for use with single or multi-node systems.");
-	ImGui::Text("Version: %s", ::fpsi::version.c_str());
-	ImGui::Text("Created by %s", ::fpsi::author.c_str());
-	ImGui::Text("%s", ::fpsi::url.c_str());
-	ImGui::Text("Under %s license", ::fpsi::license.c_str());
+	
+	ImGui::Markdown(about_message_md.c_str(), about_message_md.size(), mdConfig);
 
 	ImGui::End();
 }

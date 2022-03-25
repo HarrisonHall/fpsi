@@ -3,8 +3,9 @@ INCLUDE_LOC = -I./include/fpsi/include/yaml-cpp/include/yaml-cpp -I./include/fps
 IMGUI_INC = -I./include/imgui -I./include/imgui/backends
 IMPLOT_INC = -I./include/implot
 IMDIALOG_INC = -I./include/ImGuiFileDialog
+IMMARKDOWN_INC = -I./include/imgui_markdown
 GFX_LIBS = -lglfw -lrt -lm -ldl -lX11 -lpthread -lxcb -lXau -lXdmcp -lGL
-LIBS = $(LOCAL_LIBS) $(GFX_LIBS) $(INCLUDE_LOC) $(IMGUI_INC) $(IMPLOT_INC) $(IMDIALOG_INC) -I./include
+LIBS = $(LOCAL_LIBS) $(GFX_LIBS) $(INCLUDE_LOC) $(IMGUI_INC) $(IMPLOT_INC) $(IMDIALOG_INC) $(IMMARKDOWN_INC) -I./include
 CXXFLAGS = --std=c++17 -g -Wall -Wformat -fPIC
 
 # `pkg-config --static --libs glfw3` `pkg-config --cflags glfw`
