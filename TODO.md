@@ -3,7 +3,7 @@
 - Add `--pack <filename>` flag to pack plugins and config into single executable
 ## Plugins
 - Fix empty configs having null plugin configs
-### GUI
+### IMGUI
 - Make all other windows toggle via the session window
 - Don't render guis for unloaded plugins
 - Update session window
@@ -11,8 +11,8 @@
 - Make state editable
 - Add communication window
 - Add log viewer
-- Add popular/useful imgui extensions
-  - Markdown
+### USB Radio
+- Create basic communication protocol (crc? checksum?)
 ## Misc.
 - Fix/remove misc. inline TODOs
 - Create unit tests

@@ -2,6 +2,7 @@
 *~
 *#
 /test
+/package
 
 # building
 *.o

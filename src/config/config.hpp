@@ -23,6 +23,7 @@ public:
 	size_t get_max_raw_packets() const;
 	size_t get_max_agg_packets() const;
 	double get_aggregations_per_second() const;
+	size_t get_log_buffer_size() const;
 
 private:
 	void parse_cli(int argc, char **argv);
@@ -38,6 +39,7 @@ private:
 	size_t max_raw_packets = 10;  // Max number of raw packets tracked
 	size_t max_agg_packets = 35;  // Max number of aggregated packets tracked
 	double aggregations_per_second = 2.0;  // Number of aggregations per second
+	size_t log_buffer_size = 40;  // Number of log messages kept in memory
 	
 };
 

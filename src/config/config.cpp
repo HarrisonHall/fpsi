@@ -30,6 +30,7 @@ void Config::parse_cli(int argc, char **argv) {
 	app.add_option("--max-raw", this->max_raw_packets, "maximum number of raw packets tracked");
 	app.add_option("--max-agg", this->max_agg_packets, "maximum number of aggregated packets tracked");
 	app.add_option("--agg-per-second", this->aggregations_per_second, "aggregations per second");
+	app.add_option("--log-buffer-size", this->log_buffer_size, "length of in-memory log buffer");
 	app.add_option("--config", this->config_path, "config file path");
 	app.add_option("--node-name", this->node_name, "name of fpsi node");
 
@@ -61,6 +62,7 @@ void Config::parse_config_map() {
 	this->max_raw_packets = this->config_map.value<size_t>("max-raw", this->max_raw_packets);
 	this->max_agg_packets = this->config_map.value<size_t>("max-agg", this->max_agg_packets);
 	this->aggregations_per_second = this->config_map.value<double>("aggregations-per-second", this->aggregations_per_second);
+	this->log_buffer_size = this->config_map.value<size_t>("log-buffer-size", this->log_buffer_size);
 	this->node_name = this->config_map.value<std::string>("name", this->node_name);	
 }
 
@@ -95,6 +97,10 @@ size_t Config::get_max_agg_packets() const {
 
 double Config::get_aggregations_per_second() const {
 	return this->aggregations_per_second;
+}
+
+size_t Config::get_log_buffer_size() const {
+	return this->log_buffer_size;
 }
 
 

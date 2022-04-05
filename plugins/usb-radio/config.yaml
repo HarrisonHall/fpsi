@@ -11,4 +11,5 @@ plugins:
   usb-radio:
     path: "usb-radio.so"
     config:
-      foo: "bar"
+      show-all-detected: true
+      radio-label: rtl2832u

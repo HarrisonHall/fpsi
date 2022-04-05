@@ -3,8 +3,11 @@
 #pragma once
 
 #include <cstdio>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <sstream>
+#include <queue>
 #include <utility>
 
 
@@ -41,14 +44,15 @@ bool log(const char* message, Params &&... params) {
 }
 bool log(const std::stringstream&);
 
+class LogBuffer {
+public:
+	LogBuffer();
+	void add_log(const std::string &log);
+	std::pair<std::queue<std::string>&, std::lock_guard<std::mutex>&> get_logs();
+private:
+	std::queue<std::string> logs;
+	std::mutex log_lock;
+};
+
 }  // namespace util
-
-
-
-
-
-
-
-
-
 

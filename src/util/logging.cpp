@@ -1,6 +1,7 @@
 // logging.cpp
 
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <utility>
@@ -23,6 +24,8 @@ static std::map<util::log_level, std::string> level_to_name = {
 
 
 namespace util {
+
+std::queue<std::string> log_buffer;
 
 bool log(log_level level, const char* message) {
   std::string file_name = "/tmp/fpsi.log";
@@ -79,4 +82,24 @@ bool log(const std::stringstream &ss) {
   return log(info, ss.str());
 }
 
+
+/*
+// LogBuffer work-in-progress
+LogBuffer::LogBuffer() {}
+
+void LogBuffer::add_log(const std::string &log) {
+	std::lock_guard<std::mutex>(this->log_lock);
+	this->logs.push(log);
+	while (this->logs.size() > ::fpsi::session->config->get_log_buffer_size()) {
+		this->logs.pop();
+	}
 }
+
+std::pair<std::queue<std::string>&, std::lock_guard<std::mutex>&> LogBuffer::get_logs() {
+	return std::make_pair(
+		std::ref(std::lock_guard<std::mutex>(this->log_lock)),
+		std::ref(this->logs)
+	);
+	}*/
+
+}  // namespace util
