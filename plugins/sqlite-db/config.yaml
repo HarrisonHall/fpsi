@@ -1,9 +1,0 @@
-name: "SQLite Database"
-
-DEBUG: true
-
-plugins:
-  sqlite-db:
-    path: "sqlite-db.so"
-    config:
-      db-path: "/tmp/fpsi.sqlite"

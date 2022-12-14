@@ -1,8 +1,0 @@
-name: "ImGui GUI Demo"
-
-DEBUG: true
-
-plugins:
-  imgui-gui:
-    path: "imgui-gui.so"
-    config: {}
