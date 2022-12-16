@@ -4,15 +4,13 @@
 /test
 /package
 
-# building
-*.o
-*.so
-build
-/fpsi
+# rust building
+debug/
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
 
 # plugin-related
 *.sqlite
 imgui.ini
-
-# debugging
-valgrind-out.txt
