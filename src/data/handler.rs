@@ -40,14 +40,6 @@ impl Handler {
         return true;
     }
 
-    pub fn close_sources(&mut self) -> () {
-        for source in self.sources.iter_mut() {
-            if let Ok(mut source) = source.write() {
-                source.close();
-            }
-        }
-    }
-
     pub fn get_source<'a>(&self, name: &'a str) -> Option<Shareable<Source>> {
         for source_ref in self.sources.iter() {
             if let Ok(source) = source_ref.read() {
@@ -57,6 +49,14 @@ impl Handler {
             }
         }
         return None;
+    }
+
+    pub fn close_sources(&mut self) -> () {
+        for source in self.sources.iter_mut() {
+            if let Ok(mut source) = source.write() {
+                source.close();
+            }
+        }
     }
 
     pub fn get_source_names(&self) -> Vec<String> {

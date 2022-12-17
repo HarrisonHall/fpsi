@@ -8,8 +8,6 @@ pub use source::*;
 
 use crate::util::Shareable;
 
-const DEFAULT_AGG_PER_SEC: f64 = 4.0;
-
 #[cfg(test)]
 mod tests {
     use super::*;
