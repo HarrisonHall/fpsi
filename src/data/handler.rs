@@ -1,77 +1,45 @@
-use std::ops::Drop;
 use std::vec::Vec;
 
-use crate::data::{Frame, Source};
-use crate::util::Shareable;
+use crossbeam_channel::{bounded, Receiver, Sender};
 
+use crate::event::Event;
+
+const MESSAGE_QUEUE_SIZE: usize = 256;
 const DEFAULT_AGG_PER_SEC: f64 = 4.0;
 
 /// Holds multiple sources
 pub struct Handler {
-    sources: Vec<Shareable<Source>>,
+    event_producer: Sender<Event>,
+    event_consumer: Receiver<Event>,
     pub agg_per_second: f64,
-    closed: bool,
 }
 
 impl Handler {
     pub fn new() -> Self {
+        let (producer, consumer) = bounded(MESSAGE_QUEUE_SIZE);
         Handler {
-            sources: Vec::new(),
-            agg_per_second: DEFAULT_AGG_PER_SEC,
-            closed: false,
+            event_producer: producer,
+            event_consumer: consumer,
+            agg_per_second: 4.0,
         }
     }
 
-    pub fn create_source<'a>(&mut self, name: &'a str) -> bool {
-        // Check if closed
-        if self.closed {
-            return false;
-        }
-        // Check if already exists
-        for source in self.sources.iter() {
-            if let Ok(source) = source.read() {
-                if source.name == name {
-                    return true;
-                }
+    /// Get events from our events consumer up to MESSAGE_QUEUE_SIZE
+    pub fn get_events(&self) -> Vec<Event> {
+        let mut current_events = Vec::new();
+        loop {
+            if current_events.len() >= MESSAGE_QUEUE_SIZE {
+                break;
+            }
+            match self.event_consumer.try_recv() {
+                Ok(event) => current_events.push(event),
+                Err(_) => break,
             }
         }
-        // Create data source
-        self.sources.push(Shareable::new(Source::new(name)));
-        return true;
+        return current_events;
     }
 
-    pub fn get_source<'a>(&self, name: &'a str) -> Option<Shareable<Source>> {
-        for source_ref in self.sources.iter() {
-            if let Ok(source) = source_ref.read() {
-                if source.name == name {
-                    return Some(source_ref.clone());
-                }
-            }
-        }
-        return None;
-    }
-
-    pub fn close_sources(&mut self) -> () {
-        for source in self.sources.iter_mut() {
-            if let Ok(mut source) = source.write() {
-                source.close();
-            }
-        }
-    }
-
-    pub fn get_source_names(&self) -> Vec<String> {
-        let mut names = Vec::new();
-        for source in self.sources.iter() {
-            if let Ok(source) = source.read() {
-                names.push(source.name.clone());
-            }
-        }
-        return names;
-    }
-}
-
-impl Drop for Handler {
-    fn drop(&mut self) {
-        self.close_sources();
+    pub fn get_event_producer(&self) -> Sender<Event> {
+        self.event_producer.clone()
     }
 }

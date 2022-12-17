@@ -1,6 +1,5 @@
+use std::clone::Clone;
 use std::time::SystemTime;
-
-use crate::util::Shareable;
 
 /// Single instance of data, can be raw or agg
 pub struct Frame {
@@ -17,6 +16,17 @@ impl Frame {
             source: String::from(""),
             time: SystemTime::now(),
             data: 0,
+        }
+    }
+}
+
+impl Clone for Frame {
+    fn clone(&self) -> Self {
+        Frame {
+            id: self.id,
+            source: self.source.clone(),
+            time: self.time.clone(),
+            data: self.data.clone(),
         }
     }
 }

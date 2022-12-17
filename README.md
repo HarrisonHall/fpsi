@@ -11,6 +11,8 @@ FPSI was designed abstract so I could use it for a couple of personal projects.
 It is hard to know just what FPSI can be used for without an example. When one
 of my projects are sufficiently developed I will link it here.
 
+> Note: The rust rewrite brings with it significant architecture changes.
+
 ## Running
 ### Installation
 ```bash
