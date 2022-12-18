@@ -1,0 +1,6 @@
+- More complicated plugin test
+- Port plugins
+  - gui
+  - sqlite/other db
+  - soapysdl
+- Communication system

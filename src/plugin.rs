@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::sync::Arc;
 use std::vec::Vec;
 
@@ -6,7 +7,7 @@ use crossbeam_channel::{Receiver, Sender};
 use crate::data;
 use crate::event::Event;
 
-pub trait Plugin: Send + Sync {
+pub trait Plugin: Send + Sync + Display {
     fn load(&mut self) -> Result<(), String> {
         Ok(())
     }
