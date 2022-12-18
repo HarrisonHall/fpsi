@@ -10,20 +10,23 @@ use crate::config::*;
 use crate::data;
 use crate::event::Event;
 use crate::plugin::Plugin;
+use crate::session::communication::CommController;
+use crate::session::handler;
 
 pub struct Session {
     config: Config,
-    pub handler: data::Handler,
+    pub handler: handler::Handler,
     plugins: Vec<PluginThreadGroup>,
-    // TODO communication
+    communicator: CommController,
 }
 
 impl Session {
     pub fn new(config_file: &str) -> Self {
         Session {
             config: config_from_file(config_file),
-            handler: data::Handler::new(),
+            handler: handler::Handler::new(),
             plugins: Vec::new(),
+            communicator: CommController::new(),
         }
     }
 
@@ -41,17 +44,6 @@ impl Session {
     }
 
     pub fn run(&mut self) -> Result<(), ()> {
-        let mut last_agg_time = SystemTime::now();
-        let mut latest_raw_frames: Vec<data::Frame> = Vec::new();
-        let mut latest_agg_frames: Vec<data::Frame> = Vec::new();
-
-        #[derive(PartialEq)]
-        enum Step {
-            PreAgg,
-            PostAgg,
-        }
-        let mut step = Step::PreAgg;
-
         // Start event threads
         trace!("Creating plugin event consumer threads");
         for plugin_ctx in self.plugins.iter_mut() {
@@ -63,18 +55,26 @@ impl Session {
             }));
         }
 
+        // Loop event aggregation and data aggregation steps
         trace!("Starting aggregation loop");
         'aggregation: loop {
             // Get latest events
             for event in self.handler.get_events().iter_mut() {
                 match event {
                     Event::RawData(frame) => {
-                        latest_raw_frames.push(frame.clone());
+                        self.handler.add_raw_frame(frame.clone());
                     }
                     Event::AggData(frame) => {
-                        latest_agg_frames.push(frame.clone());
+                        self.handler.add_agg_frame(frame.clone());
                     }
-                    // TODO Send & Recv
+                    Event::Send {} => {
+                        let comm_event = self.communicator.filter(event);
+                        self.push_event_to_plugins(&comm_event);
+                    }
+                    Event::Recv {} => {
+                        let comm_event = self.communicator.filter(event);
+                        self.push_event_to_plugins(&comm_event);
+                    }
                     Event::Die => {
                         trace!("Received Event::Die, exiting...");
                         self.push_event_to_plugins(event);
@@ -86,32 +86,18 @@ impl Session {
                 };
             }
 
-            match step {
+            match self.handler.next_step {
                 // Check if waiting on preags
-                Step::PreAgg => {
-                    if !self.waiting_for_postaggs() {
-                        self.start_pre_aggs(&mut latest_raw_frames);
-                        step = Step::PostAgg;
+                handler::AggregationStep::PreAgg => {
+                    if self.handler.time_delta_has_passed() && !self.waiting_for_postaggs() {
+                        self.start_pre_aggs();
+                        self.handler.started_pre_aggs();
                     }
                 }
-                Step::PostAgg => {
-                    let time_delta_has_passed: bool = match last_agg_time.elapsed() {
-                        //Ok(duration) => duration.as_secs_f64() > 1.0 / self.handler.agg_per_second,
-                        Ok(duration) => {
-                            duration.as_secs_f64()
-                                > 1.0
-                                    / self
-                                        .config
-                                        .get_default("agg_per_second", DEFAULT_AGG_PER_SEC)
-                        }
-                        Err(_) => {
-                            return Err(()); // TODO
-                        }
-                    };
-                    if time_delta_has_passed && !self.waiting_for_preaggs() {
-                        last_agg_time = SystemTime::now();
-                        self.start_post_aggs(&mut latest_agg_frames);
-                        step = Step::PreAgg;
+                handler::AggregationStep::PostAgg => {
+                    if !self.waiting_for_preaggs() {
+                        self.start_post_aggs();
+                        self.handler.started_post_aggs();
                     }
                 }
             }
@@ -124,11 +110,10 @@ impl Session {
         Ok(())
     }
 
-    fn start_pre_aggs(&mut self, latest_raw_frames: &mut Vec<data::Frame>) {
+    fn start_pre_aggs(&mut self) {
         trace!("Starting pre-aggregation step");
         // Get agg data from vec
-        let pre_agg_frames = Arc::new(latest_raw_frames.clone());
-        latest_raw_frames.clear();
+        let pre_agg_frames = Arc::new(self.handler.dump_raw_frames());
 
         // Start postags
         for plugin_ctx in self.plugins.iter_mut() {
@@ -141,16 +126,11 @@ impl Session {
         }
     }
 
-    fn start_post_aggs(&mut self, latest_agg_frames: &mut Vec<data::Frame>) {
+    fn start_post_aggs(&mut self) {
         trace!("Starting post-aggregation step");
-        // Normalize timestamps
-        let current_time = SystemTime::now();
-        for frame in latest_agg_frames.iter_mut() {
-            frame.time = current_time;
-        }
         // Copy raw data from queue to vec
-        let post_agg_frames = Arc::new(latest_agg_frames.clone());
-        latest_agg_frames.clear();
+        let post_agg_frames = Arc::new(self.handler.dump_agg_frames());
+
         // Start preaggs
         for plugin_ctx in self.plugins.iter_mut() {
             let post_agg_frames = post_agg_frames.clone();

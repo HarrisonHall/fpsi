@@ -15,6 +15,3 @@ pub mod plugin;
 
 /// Session object. This is required to start the FPSI system.
 pub mod session;
-
-/// Misc. FPSI utility
-pub mod util;
