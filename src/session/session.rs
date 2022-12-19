@@ -1,12 +1,11 @@
 use std::sync::Arc;
 use std::thread;
-use std::time::SystemTime;
 use std::vec::Vec;
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use log::*;
 
-use crate::config::*;
+use crate::config::Config;
 use crate::data;
 use crate::event::Event;
 use crate::plugin::Plugin;
@@ -15,18 +14,24 @@ use crate::session::handler;
 
 pub struct Session {
     config: Config,
-    pub handler: handler::Handler,
-    plugins: Vec<PluginThreadGroup>,
+    handler: handler::Handler,
     communicator: CommController,
+    plugins: Vec<PluginThreadGroup>,
 }
 
 impl Session {
-    pub fn new(config_file: &str) -> Self {
+    pub fn new(config: Option<Config>) -> Self {
+        let config = match config {
+            Some(config) => config,
+            None => Config::default(),
+        };
+        let handler = handler::Handler::new(&config);
+        let communicator = CommController::new(&config);
         Session {
-            config: config_from_file(config_file),
-            handler: handler::Handler::new(),
+            config: config,
+            handler: handler,
+            communicator: communicator,
             plugins: Vec::new(),
-            communicator: CommController::new(),
         }
     }
 
@@ -294,7 +299,7 @@ mod tests {
 
     #[test]
     fn session_loop() {
-        let mut sess = Session::new("");
+        let mut sess = Session::new(None);
         sess.register_plugin(PseudoPlug { x: 0 });
         sess.register_plugin(PseudoPlug { x: 1 });
         sess.register_plugin(PseudoPlug { x: 2 });

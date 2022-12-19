@@ -1,9 +1,10 @@
+use crate::config::Config;
 use crate::event::Event;
 
 pub struct CommController {}
 
 impl CommController {
-    pub fn new() -> Self {
+    pub fn new(config: &Config) -> Self {
         CommController {}
     }
     /// Filter Send and Recv messages

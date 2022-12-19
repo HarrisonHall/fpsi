@@ -3,30 +3,30 @@ use std::vec::Vec;
 
 use crossbeam_channel::{bounded, Receiver, Sender};
 
+use crate::config::Config;
 use crate::data;
 use crate::event::Event;
 
 const MESSAGE_QUEUE_SIZE: usize = 256;
-const DEFAULT_AGG_PER_SEC: f64 = 4.0;
 
 /// Holds multiple sources
 pub struct Handler {
     event_producer: Sender<Event>,
     event_consumer: Receiver<Event>,
-    pub agg_per_second: f64,
-    pub last_agg_time: SystemTime,
+    agg_per_second_dt: f64,
+    last_agg_time: SystemTime,
     latest_raw_frames: Vec<data::Frame>,
     latest_agg_frames: Vec<data::Frame>,
     pub next_step: AggregationStep,
 }
 
 impl Handler {
-    pub fn new() -> Self {
+    pub fn new(config: &Config) -> Self {
         let (producer, consumer) = bounded(MESSAGE_QUEUE_SIZE);
         Handler {
             event_producer: producer,
             event_consumer: consumer,
-            agg_per_second: 4.0,
+            agg_per_second_dt: 1.0 / config.agg_per_second,
             last_agg_time: SystemTime::now(),
             latest_raw_frames: Vec::new(),
             latest_agg_frames: Vec::new(),
@@ -56,7 +56,7 @@ impl Handler {
     pub fn time_delta_has_passed(&self) -> bool {
         match self.last_agg_time.elapsed() {
             //Ok(duration) => duration.as_secs_f64() > 1.0 / self.handler.agg_per_second,
-            Ok(duration) => duration.as_secs_f64() > 1.0 / self.agg_per_second,
+            Ok(duration) => duration.as_secs_f64() > self.agg_per_second_dt,
             Err(_) => false,
         }
     }
