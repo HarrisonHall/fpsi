@@ -16,28 +16,23 @@ pub trait Plugin: Send + Sync + Display {
     }
     fn process_events(
         &self,
-        event_consumer: Receiver<Event>,
-        event_producer: Sender<Event>,
+        _event_consumer: Receiver<Event>,
+        _event_producer: Sender<Event>,
     ) -> Result<(), String> {
         Ok(())
     }
     fn pre_agg(
         &self,
-        raw_frames: Arc<Vec<data::Frame>>,
-        event_producer: Sender<Event>,
+        _raw_frames: Arc<Vec<data::Frame>>,
+        _event_producer: Sender<Event>,
     ) -> Result<(), String> {
         Ok(())
     }
     fn post_agg(
         &self,
-        agg_frames: Arc<Vec<data::Frame>>,
-        event_producer: Sender<Event>,
+        _agg_frames: Arc<Vec<data::Frame>>,
+        _event_producer: Sender<Event>,
     ) -> Result<(), String> {
         Ok(())
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
 }

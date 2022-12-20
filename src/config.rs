@@ -8,6 +8,7 @@ pub struct Config {
     pub debug: bool,
     pub session_name: String,
     pub agg_per_second: f64,
+    pub channel_size: usize,
 }
 
 impl Default for Config {
@@ -16,6 +17,7 @@ impl Default for Config {
             debug: true,
             session_name: String::from(""),
             agg_per_second: 0.25,
+            channel_size: u8::MAX as usize,
         }
     }
 }

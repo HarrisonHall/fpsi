@@ -2,11 +2,10 @@ use std::sync::Arc;
 use std::thread;
 use std::vec::Vec;
 
-use crossbeam_channel::{unbounded, Receiver, Sender};
+use crossbeam_channel::{bounded, Receiver, Sender};
 use log::*;
 
 use crate::config::Config;
-use crate::data;
 use crate::event::Event;
 use crate::plugin::Plugin;
 use crate::session::communication::CommController;
@@ -37,7 +36,7 @@ impl Session {
 
     pub fn register_plugin<T: Plugin + 'static>(&mut self, plugin: T) {
         trace!("Registering plugin {}", plugin);
-        let (producer, consumer) = unbounded::<Event>(); // TODO
+        let (producer, consumer) = bounded::<Event>(self.config.channel_size);
         self.plugins.push(PluginThreadGroup {
             plugin: Arc::new(plugin),
             event_thread: None,
@@ -190,7 +189,7 @@ impl Session {
                                 error!("`{}` thread did not return OK: {}", plugin_ctx.plugin, err);
                             }
                         },
-                        Err(err) => {
+                        Err(_err) => {
                             error!(
                                 "`{}` failed to complete thread properly due to panic",
                                 plugin_ctx.plugin
@@ -226,6 +225,8 @@ mod tests {
     use super::*;
     use std::fmt;
     use std::time::Duration;
+
+    use crate::data;
 
     struct PseudoPlug {
         x: u8,
@@ -282,7 +283,7 @@ mod tests {
         fn post_agg(
             &self,
             agg_frames: Arc<Vec<data::Frame>>,
-            event_producer: Sender<Event>,
+            _event_producer: Sender<Event>,
         ) -> Result<(), String> {
             for frame in agg_frames.iter() {
                 println!("{} AggFrame! {}", self.x, frame);
