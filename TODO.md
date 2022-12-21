@@ -1,8 +1,0 @@
-- Port plugins
-  - gui
-  - c dynamic library api plugin
-  - sqlite/other db
-  - soapysdl
-  - examples
-    - counter
-- Communication system
