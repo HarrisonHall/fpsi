@@ -16,7 +16,7 @@ impl Default for Config {
             debug: false,
             session_name: String::from("FPSI"),
             node_name: String::from("FPSI_NODE_DEFAULT"),
-            agg_per_second: 0.25,
+            agg_per_second: 4.0,
             global_channel_size: 1024,
             plugin_channel_size: 256,
             event_loop_channel_size: 32,

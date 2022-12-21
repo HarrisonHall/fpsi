@@ -43,7 +43,7 @@ impl Handler {
             }
             match self.event_consumer.try_recv() {
                 Ok(event) => current_events.push(event),
-                Err(_) => break,
+                Err(_) => break, // No more events
             }
         }
         return current_events;
@@ -55,7 +55,6 @@ impl Handler {
 
     pub fn time_delta_has_passed(&self) -> bool {
         match self.last_agg_time.elapsed() {
-            //Ok(duration) => duration.as_secs_f64() > 1.0 / self.handler.agg_per_second,
             Ok(duration) => duration.as_secs_f64() > self.agg_per_second_dt,
             Err(_) => false,
         }

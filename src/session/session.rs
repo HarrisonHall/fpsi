@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::thread;
 use std::vec::Vec;
 
-use crossbeam_channel::{bounded, Receiver, Sender};
+pub use crossbeam_channel::{bounded, Receiver, Sender};
 use log::*;
 
 use crate::config::Config;
@@ -87,7 +87,6 @@ impl Session {
             }
 
             match self.handler.next_step {
-                // Check if waiting on preaggs
                 handler::AggregationStep::PreAgg => {
                     if self.handler.time_delta_has_passed() && !self.waiting_for_postaggs() {
                         self.start_pre_aggs();
