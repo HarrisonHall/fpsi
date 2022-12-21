@@ -7,38 +7,38 @@ use crate::config::Config;
 use crate::data;
 use crate::event::Event;
 
-const MESSAGE_QUEUE_SIZE: usize = 256;
-
 /// Holds multiple sources
 pub struct Handler {
+    pub next_step: AggregationStep,
     event_producer: Sender<Event>,
     event_consumer: Receiver<Event>,
     agg_per_second_dt: f64,
     last_agg_time: SystemTime,
     latest_raw_frames: Vec<data::Frame>,
     latest_agg_frames: Vec<data::Frame>,
-    pub next_step: AggregationStep,
+    event_loop_channel_size: usize,
 }
 
 impl Handler {
     pub fn new(config: &Config) -> Self {
-        let (producer, consumer) = bounded(MESSAGE_QUEUE_SIZE);
+        let (producer, consumer) = bounded(config.global_channel_size);
         Handler {
+            next_step: AggregationStep::PreAgg,
             event_producer: producer,
             event_consumer: consumer,
             agg_per_second_dt: 1.0 / config.agg_per_second,
             last_agg_time: SystemTime::now(),
             latest_raw_frames: Vec::new(),
             latest_agg_frames: Vec::new(),
-            next_step: AggregationStep::PreAgg,
+            event_loop_channel_size: config.event_loop_channel_size,
         }
     }
 
-    /// Get events from our events consumer up to MESSAGE_QUEUE_SIZE
+    /// Get events from our events consumer up to self.event_loop_channel_size
     pub fn get_events(&self) -> Vec<Event> {
         let mut current_events = Vec::new();
         loop {
-            if current_events.len() >= MESSAGE_QUEUE_SIZE {
+            if current_events.len() >= self.event_loop_channel_size {
                 break;
             }
             match self.event_consumer.try_recv() {

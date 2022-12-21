@@ -1,4 +1,4 @@
-mod communication;
+pub mod communication;
 mod handler;
 mod session;
 

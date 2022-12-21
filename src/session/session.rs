@@ -36,7 +36,7 @@ impl Session {
 
     pub fn register_plugin<T: Plugin + 'static>(&mut self, plugin: T) {
         trace!("Registering plugin {}", plugin);
-        let (producer, consumer) = bounded::<Event>(self.config.channel_size);
+        let (producer, consumer) = bounded::<Event>(self.config.plugin_channel_size);
         self.plugins.push(PluginThreadGroup {
             plugin: Arc::new(plugin),
             event_thread: None,
@@ -71,12 +71,8 @@ impl Session {
                     Event::AggData(frame) => {
                         self.handler.add_agg_frame(frame.clone());
                     }
-                    Event::Send {} => {
-                        let comm_event = self.communicator.filter(event);
-                        self.push_event_to_plugins(&comm_event);
-                    }
-                    Event::Recv {} => {
-                        let comm_event = self.communicator.filter(event);
+                    Event::Communication(comm_message) => {
+                        let comm_event = self.communicator.filter(&comm_message);
                         self.push_event_to_plugins(&comm_event);
                     }
                     Event::Die => {
@@ -91,7 +87,7 @@ impl Session {
             }
 
             match self.handler.next_step {
-                // Check if waiting on preags
+                // Check if waiting on preaggs
                 handler::AggregationStep::PreAgg => {
                     if self.handler.time_delta_has_passed() && !self.waiting_for_postaggs() {
                         self.start_pre_aggs();
@@ -163,12 +159,10 @@ impl Session {
     /// Push an event to all plugin consumer threads
     fn push_event_to_plugins(&self, event: &Event) -> () {
         for plugin in self.plugins.iter() {
-            match plugin.event_thread {
-                Some(_) => {
+            if let Some(event_thread) = &plugin.event_thread {
+                if !event_thread.is_finished() {
                     plugin.event_producer.send(event.clone()).ok();
-                    // TODO - check sending
                 }
-                None => {}
             }
         }
     }

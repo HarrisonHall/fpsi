@@ -1,23 +1,25 @@
 use std::default::Default;
 
-pub const DEBUG: bool = false;
-pub const DEFAULT_SESSION_NAME: &'static str = "FPSI";
-pub const DEFAULT_AGG_PER_SEC: f64 = 4.0;
-
 pub struct Config {
-    pub debug: bool,
-    pub session_name: String,
-    pub agg_per_second: f64,
-    pub channel_size: usize,
+    pub debug: bool,                    // Debug flag
+    pub session_name: String,           // Session name
+    pub node_name: String,              // Communication node name
+    pub agg_per_second: f64,            // Number of aggregations to target per second
+    pub global_channel_size: usize,     // Size of global event channel
+    pub plugin_channel_size: usize,     // Size of event channel per plugin
+    pub event_loop_channel_size: usize, // Size of event queue to parse per Session::run() loop
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
-            debug: true,
-            session_name: String::from(""),
+            debug: false,
+            session_name: String::from("FPSI"),
+            node_name: String::from("FPSI_NODE_DEFAULT"),
             agg_per_second: 0.25,
-            channel_size: u8::MAX as usize,
+            global_channel_size: 1024,
+            plugin_channel_size: 256,
+            event_loop_channel_size: 32,
         }
     }
 }
