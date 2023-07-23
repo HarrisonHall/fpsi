@@ -1,24 +1,19 @@
-use serde_json;
-
+///! Event
 use crate::data;
-use crate::session::communication;
+use std::marker::PhantomData;
 
 #[derive(Clone)]
-pub enum Event {
-    /// No event, ignore.
-    None,
-    /// State change.
-    State {
-        state: String,
-        value: serde_json::Value,
-    },
-    /// Raw data frame, pre-aggregation.
-    RawData(data::Frame),
-    /// Aggregate data frame, post-aggregation.
-    AggData(data::Frame),
-    /// Communication message between other fpsi nodes.
-    Communication(communication::CommMessage),
-    /// Kill message.
-    /// Send to kill FPSI, receive indicates that a thread should die.
-    Die,
+pub enum Event<'e, Source, F: data::Frame<'e, Source>, S: data::State<'e>> {
+    _Phantom(PhantomData<(&'e F, &'e S, &'e Source)>),
+    State(S),
+    Raw(F),
+    Agg(F),
+    Shutdown,
+}
+
+pub trait Handler {
+    fn init(&mut self); // TODO queue
+    fn produce(&self);
+    fn aggregate(&self);
+    fn consume(&self);
 }
