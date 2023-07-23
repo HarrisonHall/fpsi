@@ -13,12 +13,8 @@ where
     St: data::State,
 {
     event_handlers: Vec<Arc<dyn event::Handler<So, Fr, St>>>,
-    sec_per_tick: f32,
+    secs_per_tick: f32,
     max_channel_size: usize,
-    // config: Config,
-    // handler: handler::Handler,
-    // communicator: CommController,
-    // plugins: Vec<PluginThreadGroup>,
 }
 
 impl<So, Fr, St> Node<So, Fr, St>
@@ -30,7 +26,7 @@ where
     pub fn new() -> Self {
         Self {
             event_handlers: Vec::new(),
-            sec_per_tick: 1.0,
+            secs_per_tick: 0.5,
             max_channel_size: 1024,
         }
     }
@@ -43,23 +39,18 @@ where
         // Initialize event handlers
         let (event_sender, event_receiver) =
             event::bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
-        let (state_sender, state_receiver) = event::bounded::<St>(self.max_channel_size);
-        let (raw_sender, raw_receiver) =
-            event::bounded::<data::FrameVec<Fr>>(self.max_channel_size);
-        let (agg_sender, agg_receiver) = event::bounded::<Fr>(self.max_channel_size);
-        let shutdown = Arc::new(RwLock::new(false));
+        let (prod_sender, prod_receiver) =
+            event::bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
+        let (agg_sender, agg_receiver) =
+            event::bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
+        let (cons_sender, cons_receiver) =
+            event::bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
 
         // Start produce threads
         let mut produce_threads = Vec::new();
         for handler in self.event_handlers.iter() {
             let handler = handler.clone();
-            let ctx = event::HandlerContext::new(
-                event_sender.clone(),
-                state_receiver.clone(),
-                None,
-                None,
-                shutdown.clone(),
-            );
+            let ctx = event::HandlerContext::new(event_sender.clone(), prod_receiver.clone());
             produce_threads.push(thread::spawn(move || {
                 handler.produce(ctx);
             }));
@@ -69,13 +60,7 @@ where
         let mut aggregate_threads = Vec::new();
         for handler in self.event_handlers.iter() {
             let handler = handler.clone();
-            let ctx = event::HandlerContext::new(
-                event_sender.clone(),
-                state_receiver.clone(),
-                Some(raw_receiver.clone()),
-                None,
-                shutdown.clone(),
-            );
+            let ctx = event::HandlerContext::new(event_sender.clone(), agg_receiver.clone());
             aggregate_threads.push(thread::spawn(move || {
                 handler.aggregate(ctx);
             }));
@@ -85,50 +70,39 @@ where
         let mut consume_threads = Vec::new();
         for handler in self.event_handlers.iter() {
             let handler = handler.clone();
-            let ctx = event::HandlerContext::new(
-                event_sender.clone(),
-                state_receiver.clone(),
-                None,
-                Some(agg_receiver.clone()),
-                shutdown.clone(),
-            );
+            let ctx = event::HandlerContext::new(event_sender.clone(), cons_receiver.clone());
             consume_threads.push(thread::spawn(move || {
                 handler.consume(ctx);
             }));
         }
 
         // Handle ticks & Aggregates
-        let mut raws: Vec<Arc<Fr>> = Vec::new();
+        let mut raws: Vec<Fr> = Vec::new();
         let mut last_agg = std::time::Instant::now();
         'event_handler: loop {
             // Process new event
             if let Ok(event) = event_receiver.try_recv() {
+                // Forward events
+                prod_sender.send(event.clone()).ok();
+                agg_sender.send(event.clone()).ok();
+                cons_sender.send(event.clone()).ok();
+                // Handle shutdown
                 match event {
-                    event::Event::<So, Fr, St>::State(state) => {
-                        state_sender.send(state).ok();
+                    event::Event::Shutdown => {
+                        break 'event_handler;
                     }
-                    event::Event::<So, Fr, St>::Raw(raw) => {
-                        raws.push(Arc::new(raw));
-                    }
-                    event::Event::<So, Fr, St>::Agg(agg) => {
-                        agg_sender.send(agg).ok();
-                    }
-                    event::Event::<So, Fr, St>::Shutdown => {
-                        println!("Got shutdown!");
-                        if let Ok(mut shutdown) = shutdown.write() {
-                            *shutdown = true;
-                            break 'event_handler;
-                        }
+                    event::Event::Raw(raw) => {
+                        raws.push(raw);
                     }
                     _ => {}
                 };
             }
             // Handle aggregates
-            if last_agg.elapsed().as_secs_f32() >= self.sec_per_tick {
+            if last_agg.elapsed().as_secs_f32() >= self.secs_per_tick {
                 println!("Aggregating!");
                 last_agg = std::time::Instant::now();
                 let raws_to_agg = Arc::new(raws.clone());
-                raw_sender.send(raws_to_agg).ok();
+                agg_sender.send(event::Event::Raws(raws_to_agg)).ok();
                 raws.clear();
             }
         }
