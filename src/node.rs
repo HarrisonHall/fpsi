@@ -1,7 +1,8 @@
 use std::sync::Arc;
-use std::sync::RwLock;
 use std::thread;
 use std::vec::Vec;
+
+use crossbeam_channel::bounded;
 
 use crate::data;
 use crate::event;
@@ -38,13 +39,12 @@ where
     pub fn run<'r>(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // Initialize event handlers
         let (event_sender, event_receiver) =
-            event::bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
+            bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
         let (prod_sender, prod_receiver) =
-            event::bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
-        let (agg_sender, agg_receiver) =
-            event::bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
+            bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
+        let (agg_sender, agg_receiver) = bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
         let (cons_sender, cons_receiver) =
-            event::bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
+            bounded::<event::Event<So, Fr, St>>(self.max_channel_size);
 
         // Start produce threads
         let mut produce_threads = Vec::new();
@@ -82,24 +82,30 @@ where
         'event_handler: loop {
             // Process new event
             if let Ok(event) = event_receiver.try_recv() {
-                // Forward events
-                prod_sender.send(event.clone()).ok();
-                agg_sender.send(event.clone()).ok();
-                cons_sender.send(event.clone()).ok();
                 // Handle shutdown
                 match event {
                     event::Event::Shutdown => {
+                        prod_sender.send(event.clone()).ok();
+                        agg_sender.send(event.clone()).ok();
+                        cons_sender.send(event.clone()).ok();
                         break 'event_handler;
+                    }
+                    event::Event::State(_) => {
+                        prod_sender.send(event.clone()).ok();
+                        agg_sender.send(event.clone()).ok();
+                        cons_sender.send(event.clone()).ok();
                     }
                     event::Event::Raw(raw) => {
                         raws.push(raw);
+                    }
+                    event::Event::Agg(_) => {
+                        cons_sender.send(event.clone()).ok();
                     }
                     _ => {}
                 };
             }
             // Handle aggregates
             if last_agg.elapsed().as_secs_f32() >= self.secs_per_tick {
-                println!("Aggregating!");
                 last_agg = std::time::Instant::now();
                 let raws_to_agg = Arc::new(raws.clone());
                 agg_sender.send(event::Event::Raws(raws_to_agg)).ok();

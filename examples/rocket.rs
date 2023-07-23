@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 enum RocketSource {
+    Calculation,
     Telemetry,
     SensorBoard,
     Simulation,
@@ -11,12 +12,18 @@ enum RocketSource {
 impl Source for RocketSource {}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-enum RocketState {
+enum FlightState {
     Idle,
     Up,
     Apogee,
     Down,
     Recovery,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+enum RocketState {
+    Locked(bool),
+    FlightState(FlightState),
 }
 
 impl fpsi::State for RocketState {}
@@ -29,7 +36,6 @@ enum RocketDataType {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct RocketData {
-    // tick: fpsi::Tick,
     source: RocketSource,
     data: RocketDataType,
 }
@@ -40,23 +46,21 @@ impl fpsi::Frame<RocketSource> for RocketData {
     }
 }
 
-struct TelemetryHandler {
-    // sender: Option<fpsi::Sender<Event<RocketSource, RocketData, RocketState>>>,
-}
+type RocketEvent = fpsi::Event<RocketSource, RocketData, RocketState>;
 
-impl TelemetryHandler {
+struct AltitudeHandler {}
+
+impl AltitudeHandler {
     fn new() -> Self {
         Self {}
     }
 }
 
-type RocketEvent = fpsi::Event<RocketSource, RocketData, RocketState>;
-
-impl fpsi::Handler<RocketSource, RocketData, RocketState> for TelemetryHandler {
+impl fpsi::Handler<RocketSource, RocketData, RocketState> for AltitudeHandler {
     /// Produce raw data frames
     fn produce(&self, ctx: fpsi::HandlerContext<RocketSource, RocketData, RocketState>) {
         let mut altitude: f32 = 0.0;
-        let mut max_iter: usize = 5;
+        let mut max_iter: usize = 15;
         'producer: loop {
             match ctx.recv() {
                 fpsi::Event::Shutdown => {
@@ -74,10 +78,6 @@ impl fpsi::Handler<RocketSource, RocketData, RocketState> for TelemetryHandler {
                 source: RocketSource::SensorBoard,
                 data: RocketDataType::Altitude(altitude),
             }));
-            // sender.send(RocketEvent::Raw(RocketData::Altitude(Altitude::new(
-            // altitude,
-            // ))));
-            println!("Altitude: {}", altitude);
             altitude += 2.5;
             std::thread::sleep(std::time::Duration::from_secs_f32(0.4));
         }
@@ -103,7 +103,7 @@ impl fpsi::Handler<RocketSource, RocketData, RocketState> for TelemetryHandler {
                     }
                     if tot_alts > 0 {
                         ctx.send(RocketEvent::Agg(RocketData {
-                            source: RocketSource::SensorBoard,
+                            source: RocketSource::Calculation,
                             data: RocketDataType::Altitude(tot_altitude / tot_alts as f32),
                         }));
                     }
@@ -131,7 +131,6 @@ impl fpsi::Handler<RocketSource, RocketData, RocketState> for TelemetryHandler {
 fn main() {
     println!("RocketTest!");
     let mut node = Node::new();
-    node.register_event_handler(Arc::new(TelemetryHandler::new()));
-    node.run();
-    // let t_handler = TelemetryHandler::init();
+    node.register_event_handler(Arc::new(AltitudeHandler::new()));
+    node.run().ok();
 }

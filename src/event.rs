@@ -1,8 +1,10 @@
 ///! Event
-use crate::data;
-pub use crossbeam_channel::{bounded, Receiver, Sender};
-pub use std::marker::PhantomData;
+use std::marker::PhantomData;
 use std::sync::Arc;
+
+use crossbeam_channel::{Receiver, Sender};
+
+use crate::data;
 
 #[derive(Clone)]
 pub enum Event<So, Fr, St>

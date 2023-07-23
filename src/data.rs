@@ -1,11 +1,8 @@
 ///! Data
 pub use std::clone::Clone;
 
-pub use serde::de::DeserializeOwned;
-pub use serde::{Deserialize, Serialize};
-
-/// Time tick
-pub type Tick = u64;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 /// Source for data
 pub trait Source: Serialize + DeserializeOwned + Send + Sync + Clone + 'static {}
